@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LNP GUESSER 38-0</title>
     <style>
         :root {
@@ -3304,16 +3304,25 @@
             const matchPace = Math.round(70 + Math.random() * 16);
             const myTeamOvrSum = playersArray.reduce((acc, p) => acc + p.ovr, 0) / 5;
 
-            const userShootingLuck = (Math.random() * 26) - 11;
-            const userEfficiency = 0.65 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
-            let finalUserScore = Math.round(matchPace * userEfficiency);
+            // --- CALCOLO EFFICIENZA UTENTE ---
+const userShootingLuck = (Math.random() * 20) - 8;
+const userEfficiency = 0.72 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
+let finalUserScore = Math.round(matchPace * userEfficiency);
 
-            const oppPlayers = allPlayers.filter(p => p.club === opponentName);
-            const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + p.ovr, 0) / oppPlayers.length : 65;
+// --- CALCOLO EFFICIENZA CPU (BILANCIATO) ---
+const oppPlayers = allPlayers.filter(p => p.club === opponentName);
+const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + p.ovr, 0) / oppPlayers.length : 60;
 
-            const oppShootingLuck = (Math.random() * 36) - 13;
-            const oppEfficiency = 0.68 + (oppAvgOvr * 0.0038) + (oppShootingLuck / 100);
-            let finalOppScore = Math.round(matchPace * oppEfficiency);
+const oppShootingLuck = (Math.random() * 22) - 13; 
+const oppEfficiency = 0.64 + (oppAvgOvr * 0.0034) + (oppShootingLuck / 100);
+let finalOppScore = Math.round(matchPace * oppEfficiency);
+
+// Boost per l'utente in caso di clutch time
+if (finalUserScore <= finalOppScore) {
+    if (myTeamOvrSum > oppAvgOvr + 5 && Math.random() > 0.3) {
+        finalUserScore = finalOppScore + Math.floor(Math.random() * 5) + 1;
+    }
+}
 
             if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
 
