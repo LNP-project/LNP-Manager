@@ -1,0 +1,3399 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LNP GUESSER 38-0</title>
+    <style>
+        :root {
+            --bg-dark: #07111e;
+            --bg-card: #0f213a;
+            --lnp-blue: #004b93;
+            --lnp-orange: #ff6600;
+            --lnp-orange-hover: #e05500;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --court-wood: #e7a96d;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1350px;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 15px;
+            background: #091729;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: grid-template-columns 0.5s ease-in-out;
+        }
+
+            /* TRANSIZIONE MODALITÀ GIOCO: Il campo si restringe */
+            .game-container.game-mode {
+                grid-template-columns: 400px 1fr;
+            }
+
+        @media (max-width: 950px) {
+            .game-container, .game-container.game-mode {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        .main-court-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .scoreboard-top {
+            background: linear-gradient(180deg, var(--lnp-blue) 0%, #091729 100%);
+            border-bottom: 3px solid var(--lnp-orange);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+            .scoreboard-top h1 {
+                margin: 0;
+                font-size: 1.8rem;
+                color: white;
+                letter-spacing: 1px;
+            }
+
+                .scoreboard-top h1 span {
+                    color: var(--lnp-orange);
+                }
+
+        .next-match-banner {
+            margin-top: 8px;
+            background: var(--bg-card);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            min-height: 50px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .live-ticker {
+            color: #38bdf8;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.1rem;
+            margin-top: 4px;
+            min-height: 22px;
+        }
+
+        .basketball-court {
+            background-color: var(--lnp-blue);
+            border: 4px solid white;
+            border-radius: 12px;
+            padding: 15px;
+            position: relative;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Restringimento del campo e delle card quando si simula */
+        .game-mode .basketball-court {
+            padding: 8px;
+        }
+
+        .game-mode .court-inner-wood {
+            height: 160px;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .game-mode .court-player-slot {
+            width: 70px;
+            padding: 3px;
+        }
+
+        .game-mode .p-club, .game-mode .p-stats-mini {
+            display: none !important;
+        }
+
+        .game-mode .p-name {
+            font-size: 0.75rem;
+        }
+
+        .court-inner-wood {
+            background-color: var(--court-wood);
+            background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 30px, rgba(0,0,0,0.03) 30px, rgba(0,0,0,0.03) 60px);
+            border: 3px solid white;
+            height: 280px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+        }
+
+            .court-inner-wood::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 50%;
+                width: 3px;
+                background: white;
+            }
+
+            .court-inner-wood::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 80px;
+                height: 80px;
+                border: 3px solid white;
+                border-radius: 50%;
+            }
+
+        .court-player-slot {
+            width: 140px;
+            background: rgba(7, 17, 30, 0.95);
+            border: 2px solid #334155;
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+            z-index: 2;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+            .court-player-slot.filled {
+                border-color: var(--lnp-orange);
+                background: var(--bg-card);
+            }
+
+        .role-indicator {
+            background: var(--lnp-orange);
+            color: white;
+            font-weight: bold;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        .p-name {
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .p-club {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            height: 18px;
+            overflow: hidden;
+        }
+
+        .p-stats-mini {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2px;
+            font-size: 0.65rem;
+            background: rgba(0,0,0,0.4);
+            padding: 4px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .draft-panel-bottom {
+            background: #050d18;
+            border: 2px solid var(--lnp-blue);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .draft-panel-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: var(--lnp-orange);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .draft-options-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .draft-options-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .draft-option-card {
+            background: var(--bg-card);
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            text-align: center;
+        }
+
+            .draft-option-card:hover {
+                border-color: var(--lnp-orange);
+            }
+
+        .sidebar-right {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .action-box {
+            background: var(--bg-card);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .record-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+            .record-text span.w {
+                color: var(--success);
+            }
+
+            .record-text span.l {
+                color: var(--danger);
+            }
+
+        button {
+            background: var(--lnp-orange);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            width: 100%;
+            transition: background 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+            button:hover {
+                background: var(--lnp-orange-hover);
+            }
+
+            button:disabled {
+                background: #334155;
+                color: #64748b;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+            button.btn-choose {
+                background: var(--lnp-blue);
+                color: white;
+                padding: 5px;
+                font-size: 0.75rem;
+                margin-top: 5px;
+            }
+
+        .calendar-box {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 12px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            max-height: 420px;
+            border: 1px solid #1e293b;
+        }
+
+        .calendar-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .calendar-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .calendar-item {
+            font-size: 0.8rem;
+            padding: 8px;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+            .calendar-item.win {
+                border-left: 4px solid var(--success);
+                background: rgba(16,185,129,0.07);
+            }
+
+            .calendar-item.loss {
+                border-left: 4px solid var(--danger);
+                background: rgba(239,68,68,0.07);
+            }
+
+        .cal-row-mvp {
+            font-size: 0.7rem;
+            color: var(--lnp-orange);
+            font-style: italic;
+        }
+
+        .end-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 110;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader-card {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            border: 3px solid var(--lnp-orange);
+            max-width: 460px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="main-game-viewport">
+        <div class="main-court-area">
+            <div class="scoreboard-top">
+                <h1>LNP GUESSER <span>38-0</span> CHALLENGE</h1>
+                <div class="next-match-banner" id="match-banner-info">
+                    <div id="banner-main-text">Clicca su <strong>AVVIA DRAFT</strong> sulla destra per comporre il quintetto ufficiale!</div>
+                    <div class="live-ticker" id="live-simulation-ticker"></div>
+                </div>
+            </div>
+
+            <div class="basketball-court">
+                <div class="court-inner-wood" id="court-grid">
+                    <div class="court-player-slot" id="court-PG"><span class="role-indicator">PG</span><div class="p-name">?</div><div class="p-club">-</div></div>
+                    <div class="court-player-slot" id="court-SG"><span class="role-indicator">SG</span><div class="p-name">?</div><div class="p-club">-</div></div>
+                    <div class="court-player-slot" id="court-SF"><span class="role-indicator">SF</span><div class="p-name">?</div><div class="p-club">-</div></div>
+                    <div class="court-player-slot" id="court-PF"><span class="role-indicator">PF</span><div class="p-name">?</div><div class="p-club">-</div></div>
+                    <div class="court-player-slot" id="court-C"><span class="role-indicator">C</span><div class="p-name">?</div><div class="p-club">-</div></div>
+                </div>
+            </div>
+
+            <div class="draft-panel-bottom" id="draft-panel" style="opacity: 0.5;">
+                <div class="draft-panel-title">
+                    <span id="draft-title-text">Draft di Campionato</span>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">Scegli con strategia basandoti sulle statistiche reali dei giocatori</span>
+                </div>
+                <div class="draft-options-row" id="draft-options-container">
+                    <div class="draft-option-card" style="color:var(--text-muted); font-size:0.8rem; padding:20px 0; grid-column: span 5;">Avvia il draft per caricare i giocatori del database.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-right">
+            <div class="action-box">
+                <div class="calendar-title">Pannello Squadra</div>
+                <div class="record-text"><span class="w" id="w-counter">0</span> - <span class="l" id="l-counter">0</span></div>
+                <button id="btn-start-draft" onclick="startDraftProcess()" style="margin-bottom:8px;">Avvia Draft</button>
+                <button id="btn-play-game" onclick="simMatch()" disabled>Gioca Partita</button>
+            </div>
+
+            <div class="calendar-box">
+                <div class="calendar-title">Calendario Stagione</div>
+                <ul class="calendar-list" id="calendar-render-box">
+                    <li style="color:var(--text-muted); font-size:0.75rem; padding:10px;">In attesa del draft...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="end-overlay" id="end-screen">
+        <div class="loader-card">
+            <h2 id="end-title" style="font-size:1.8rem; margin-top:0;">RISULTATO</h2>
+            <p id="end-msg" style="margin-bottom:15px; font-size:1rem; line-height:1.4;"></p>
+            <button onclick="location.reload()">Riavvia Nuova Sfida</button>
+        </div>
+    </div>
+
+    <script>// --- INSERISCI IL TUO DATABASE SU VSCODE ALL'INTERNO DI QUESTO ARRAY ---
+        const allPlayers = [
+            
+                {
+                    "nome": "Matthew James",
+                    "cognome": "Tiby",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 203.0,
+                    "peso": 104.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 19.3,
+                    "apg": 2.8,
+                    "rpg": 8.9,
+                    "spg": 1.0,
+                    "ovr": 50
+                },
+                {
+                    "nome": "Paulius",
+                    "cognome": "Sorokas",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 204.0,
+                    "peso": 90.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 16.7,
+                    "apg": 1.8,
+                    "rpg": 10.8,
+                    "spg": 0.6,
+                    "ovr": 48
+                },
+                {
+                    "nome": "Regimantas",
+                    "cognome": "Miniotas",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 206.0,
+                    "peso": 100.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 14.2,
+                    "apg": 2.2,
+                    "rpg": 8.5,
+                    "spg": 0.7,
+                    "ovr": 42
+                },
+                {
+                    "nome": "Robert",
+                    "cognome": "Allen",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 202.0,
+                    "peso": 98.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 18.9,
+                    "apg": 2.0,
+                    "rpg": 9.9,
+                    "spg": 1.0,
+                    "ovr": 42
+                },
+                {
+                    "nome": "Deshawn",
+                    "cognome": "Stephens",
+                    "club": "Unieuro Forlì",
+                    "altezza": 203.0,
+                    "peso": 98.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 14.6,
+                    "apg": 1.3,
+                    "rpg": 7.6,
+                    "spg": 0.7,
+                    "ovr": 41
+                },
+                {
+                    "nome": "DAngelo",
+                    "cognome": "Harrison",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 193.0,
+                    "peso": 92.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 21.9,
+                    "apg": 3.6,
+                    "rpg": 5.5,
+                    "spg": 1.4,
+                    "ovr": 41
+                },
+                {
+                    "nome": "Deshawn",
+                    "cognome": "Freeman",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 203.0,
+                    "peso": 102.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 12.6,
+                    "apg": 1.4,
+                    "rpg": 7.7,
+                    "spg": 0.9,
+                    "ovr": 38
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Gentile",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 200.0,
+                    "peso": 103.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 16.9,
+                    "apg": 4.9,
+                    "rpg": 6.9,
+                    "spg": 0.7,
+                    "ovr": 38
+                },
+                {
+                    "nome": "Anthony",
+                    "cognome": "Morse",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 203.0,
+                    "peso": 103.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 13.2,
+                    "apg": 0.5,
+                    "rpg": 7.7,
+                    "spg": 0.5,
+                    "ovr": 38
+                },
+                {
+                    "nome": "Stacy",
+                    "cognome": "Davis IV",
+                    "club": "Sella Cento",
+                    "altezza": 198.0,
+                    "peso": 107.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 19.4,
+                    "apg": 1.9,
+                    "rpg": 5.8,
+                    "spg": 0.7,
+                    "ovr": 37
+                },
+                {
+                    "nome": "Jalen",
+                    "cognome": "Cannon",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 198.0,
+                    "peso": 104.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 13.9,
+                    "apg": 1.5,
+                    "rpg": 6.2,
+                    "spg": 0.5,
+                    "ovr": 37
+                },
+                {
+                    "nome": "Kevion",
+                    "cognome": "Taylor",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 198.0,
+                    "peso": 93.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 19.5,
+                    "apg": 3.6,
+                    "rpg": 3.7,
+                    "spg": 0.6,
+                    "ovr": 36
+                },
+                {
+                    "nome": "Justin",
+                    "cognome": "Robinson",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 173.0,
+                    "peso": 79.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 14.9,
+                    "apg": 6.6,
+                    "rpg": 4.0,
+                    "spg": 1.2,
+                    "ovr": 35
+                },
+                {
+                    "nome": "Giovanni",
+                    "cognome": "Vildera",
+                    "club": "Valtur Brindisi",
+                    "altezza": 205.0,
+                    "peso": 105.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 11.0,
+                    "apg": 1.2,
+                    "rpg": 6.4,
+                    "spg": 0.5,
+                    "ovr": 34
+                },
+                {
+                    "nome": "Bruno",
+                    "cognome": "Mascolo",
+                    "club": "Givova Scafati",
+                    "altezza": 190.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 14.8,
+                    "apg": 5.2,
+                    "rpg": 5.6,
+                    "spg": 1.3,
+                    "ovr": 34
+                },
+                {
+                    "nome": "Gabe",
+                    "cognome": "Devoe",
+                    "club": "Sella Cento",
+                    "altezza": 191.0,
+                    "peso": 95.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.0,
+                    "apg": 4.4,
+                    "rpg": 5.4,
+                    "spg": 1.1,
+                    "ovr": 33
+                },
+                {
+                    "nome": "Keshawn",
+                    "cognome": "Curry",
+                    "club": "Gemini Mestre",
+                    "altezza": 193.0,
+                    "peso": 79.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 16.6,
+                    "apg": 3.6,
+                    "rpg": 4.0,
+                    "spg": 0.8,
+                    "ovr": 33
+                },
+                {
+                    "nome": "Tommaso",
+                    "cognome": "Guariglia",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 205.0,
+                    "peso": 100.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 11.5,
+                    "apg": 1.5,
+                    "rpg": 5.3,
+                    "spg": 0.3,
+                    "ovr": 33
+                },
+                {
+                    "nome": "Simone",
+                    "cognome": "Zanotti",
+                    "club": "Estra Pistoia",
+                    "altezza": 208.0,
+                    "peso": 106.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 9.4,
+                    "apg": 1.1,
+                    "rpg": 6.8,
+                    "spg": 0.3,
+                    "ovr": 32
+                },
+                {
+                    "nome": "Pierre",
+                    "cognome": "Brooks II",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 198.0,
+                    "peso": 102.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 16.9,
+                    "apg": 1.8,
+                    "rpg": 3.2,
+                    "spg": 0.5,
+                    "ovr": 32
+                },
+                {
+                    "nome": "Darius",
+                    "cognome": "Perry",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 188.0,
+                    "peso": 84.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.4,
+                    "apg": 3.8,
+                    "rpg": 3.4,
+                    "spg": 1.4,
+                    "ovr": 31
+                },
+                {
+                    "nome": "Dustin",
+                    "cognome": "Hogue",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 198.0,
+                    "peso": 100.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 9.0,
+                    "apg": 2.0,
+                    "rpg": 6.0,
+                    "spg": 0.5,
+                    "ovr": 31
+                },
+                {
+                    "nome": "Gora",
+                    "cognome": "Camara",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 214.0,
+                    "peso": 114.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 10.8,
+                    "apg": 0.6,
+                    "rpg": 5.0,
+                    "spg": 0.4,
+                    "ovr": 31
+                },
+                {
+                    "nome": "Caleb",
+                    "cognome": "Walker",
+                    "club": "Givova Scafati",
+                    "altezza": 193.0,
+                    "peso": 93.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 16.7,
+                    "apg": 1.8,
+                    "rpg": 5.7,
+                    "spg": 0.7,
+                    "ovr": 31
+                },
+                {
+                    "nome": "Jaren",
+                    "cognome": "Lewis",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 198.0,
+                    "peso": 98.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 14.92,
+                    "apg": 1.83,
+                    "rpg": 7.14,
+                    "spg": 1.25,
+                    "ovr": 30
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Grande",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 185.0,
+                    "peso": 78.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.41,
+                    "apg": 9.0,
+                    "rpg": 1.79,
+                    "spg": 0.14,
+                    "ovr": 30
+                },
+                {
+                    "nome": "Zach",
+                    "cognome": "Copeland",
+                    "club": "Valtur Brindisi",
+                    "altezza": 193.0,
+                    "peso": 84.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 16.7,
+                    "apg": 2.5,
+                    "rpg": 2.9,
+                    "spg": 0.9,
+                    "ovr": 30
+                },
+                {
+                    "nome": "Seneca",
+                    "cognome": "Knight",
+                    "club": "Gemini Mestre",
+                    "altezza": 201.0,
+                    "peso": 98.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 14.5,
+                    "apg": 1.3,
+                    "rpg": 4.8,
+                    "spg": 1.3,
+                    "ovr": 30
+                },
+                {
+                    "nome": "Mark",
+                    "cognome": "Ogden",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 206.0,
+                    "peso": 95.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 12.3,
+                    "apg": 1.6,
+                    "rpg": 8.1,
+                    "spg": 1.2,
+                    "ovr": 30
+                },
+                {
+                    "nome": "Macio",
+                    "cognome": "Teague",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 193.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 16.5,
+                    "apg": 2.3,
+                    "rpg": 3.2,
+                    "spg": 1.0,
+                    "ovr": 30
+                },
+                {
+                    "nome": "Lee",
+                    "cognome": "Moore",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 194.0,
+                    "peso": 79.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.5,
+                    "apg": 2.9,
+                    "rpg": 2.3,
+                    "spg": 1.1,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Lucio",
+                    "cognome": "Redivo",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 183.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 14.1,
+                    "apg": 4.1,
+                    "rpg": 2.5,
+                    "spg": 0.7,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Billy",
+                    "cognome": "Garrett",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 198.0,
+                    "peso": 95.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 16.2,
+                    "apg": 2.1,
+                    "rpg": 2.7,
+                    "spg": 0.9,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Demonte",
+                    "cognome": "Harper",
+                    "club": "Unieuro Forlì",
+                    "altezza": 193.0,
+                    "peso": 88.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 13.2,
+                    "apg": 4.2,
+                    "rpg": 4.7,
+                    "spg": 1.1,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Avery",
+                    "cognome": "Woodson",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 188.0,
+                    "peso": 86.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 16.4,
+                    "apg": 1.9,
+                    "rpg": 3.0,
+                    "spg": 0.5,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Galmarini",
+                    "club": "Gemini Mestre",
+                    "altezza": 200.0,
+                    "peso": 95.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 7.9,
+                    "apg": 1.6,
+                    "rpg": 5.9,
+                    "spg": 0.6,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Tambone",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 192.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.2,
+                    "apg": 3.4,
+                    "rpg": 2.7,
+                    "spg": 0.6,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Bucarelli",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 198.0,
+                    "peso": 93.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 11.6,
+                    "apg": 5.7,
+                    "rpg": 4.4,
+                    "spg": 0.9,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Russ",
+                    "cognome": "Smith",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 183.0,
+                    "peso": 84.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.4,
+                    "apg": 3.0,
+                    "rpg": 3.3,
+                    "spg": 1.2,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Jacopo",
+                    "cognome": "Borra",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 215.0,
+                    "peso": 115.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 7.9,
+                    "apg": 1.1,
+                    "rpg": 5.9,
+                    "spg": 0.0,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Terry",
+                    "cognome": "Allen",
+                    "club": "Givova Scafati",
+                    "altezza": 203.0,
+                    "peso": 190.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 14.1,
+                    "apg": 1.1,
+                    "rpg": 5.5,
+                    "spg": 0.7,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Tyrus",
+                    "cognome": "McGee",
+                    "club": "Tezenis Verona",
+                    "altezza": 188.0,
+                    "peso": 93.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.4,
+                    "apg": 2.9,
+                    "rpg": 2.7,
+                    "spg": 0.7,
+                    "ovr": 29
+                },
+                {
+                    "nome": "Toni",
+                    "cognome": "Perkovic",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 191.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 15.5,
+                    "apg": 2.5,
+                    "rpg": 2.5,
+                    "spg": 0.8,
+                    "ovr": 28
+                },
+                {
+                    "nome": "Andrea",
+                    "cognome": "Cinciarini",
+                    "club": "Valtur Brindisi",
+                    "altezza": 193.0,
+                    "peso": 87.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.8,
+                    "apg": 7.7,
+                    "rpg": 5.3,
+                    "spg": 1.8,
+                    "ovr": 28
+                },
+                {
+                    "nome": "Pierpaolo",
+                    "cognome": "Marini",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 193.0,
+                    "peso": 87.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 13.9,
+                    "apg": 3.1,
+                    "rpg": 4.1,
+                    "spg": 0.7,
+                    "ovr": 28
+                },
+                {
+                    "nome": "Davide",
+                    "cognome": "Denegri",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 184.0,
+                    "peso": 80.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 13.1,
+                    "apg": 4.5,
+                    "rpg": 3.1,
+                    "spg": 1.0,
+                    "ovr": 28
+                },
+                {
+                    "nome": "Simone",
+                    "cognome": "Barbante",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 211.0,
+                    "peso": 98.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 8.0,
+                    "apg": 1.2,
+                    "rpg": 4.3,
+                    "spg": 0.6,
+                    "ovr": 27
+                },
+                {
+                    "nome": "Matias",
+                    "cognome": "Bortolin",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 208.0,
+                    "peso": 100.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 6.9,
+                    "apg": 1.9,
+                    "rpg": 5.0,
+                    "spg": 0.6,
+                    "ovr": 27
+                },
+                {
+                    "nome": "Wayne",
+                    "cognome": "Stewart Jr.",
+                    "club": "Gemini Mestre",
+                    "altezza": 201.0,
+                    "peso": 95.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 13.0,
+                    "apg": 1.2,
+                    "rpg": 5.1,
+                    "spg": 0.9,
+                    "ovr": 27
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Simioni",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 206.0,
+                    "peso": 110.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 8.8,
+                    "apg": 1.0,
+                    "rpg": 3.9,
+                    "spg": 0.7,
+                    "ovr": 27
+                },
+                {
+                    "nome": "Scott",
+                    "cognome": "Ulaneo",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 208.0,
+                    "peso": 98.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 7.8,
+                    "apg": 0.7,
+                    "rpg": 5.2,
+                    "spg": 0.5,
+                    "ovr": 27
+                },
+                {
+                    "nome": "Federico",
+                    "cognome": "Zampini",
+                    "club": "Tezenis Verona",
+                    "altezza": 191.0,
+                    "peso": 78.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 12.0,
+                    "apg": 4.1,
+                    "rpg": 4.0,
+                    "spg": 1.2,
+                    "ovr": 27
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Fantinelli",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 195.0,
+                    "peso": 93.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.3,
+                    "apg": 7.3,
+                    "rpg": 4.5,
+                    "spg": 0.9,
+                    "ovr": 26
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Berti",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 212.0,
+                    "peso": 103.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 6.5,
+                    "apg": 0.9,
+                    "rpg": 5.3,
+                    "spg": 0.7,
+                    "ovr": 26
+                },
+                {
+                    "nome": "Karvel",
+                    "cognome": "Anderson",
+                    "club": "Estra Pistoia",
+                    "altezza": 188.0,
+                    "peso": 86.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 13.8,
+                    "apg": 2.2,
+                    "rpg": 3.3,
+                    "spg": 0.3,
+                    "ovr": 26
+                },
+                {
+                    "nome": "Justin",
+                    "cognome": "Johnson",
+                    "club": "Tezenis Verona",
+                    "altezza": 201.0,
+                    "peso": 100.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "C",
+                    "ppg": 10.0,
+                    "apg": 1.7,
+                    "rpg": 7.3,
+                    "spg": 0.6,
+                    "ovr": 26
+                },
+                {
+                    "nome": "Federico",
+                    "cognome": "Poser",
+                    "club": "Tezenis Verona",
+                    "altezza": 203.0,
+                    "peso": 104.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 7.3,
+                    "apg": 0.8,
+                    "rpg": 5.0,
+                    "spg": 0.3,
+                    "ovr": 26
+                },
+                {
+                    "nome": "Nicola",
+                    "cognome": "Berdini",
+                    "club": "Sella Cento",
+                    "altezza": 185.0,
+                    "peso": 80.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.7,
+                    "apg": 4.5,
+                    "rpg": 4.5,
+                    "spg": 1.3,
+                    "ovr": 25
+                },
+                {
+                    "nome": "Edoardo",
+                    "cognome": "Tiberti",
+                    "club": "Sella Cento",
+                    "altezza": 202.0,
+                    "peso": 97.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 7.8,
+                    "apg": 0.7,
+                    "rpg": 3.7,
+                    "spg": 0.7,
+                    "ovr": 25
+                },
+                {
+                    "nome": "Simone",
+                    "cognome": "Aromando",
+                    "club": "Gemini Mestre",
+                    "altezza": 200.0,
+                    "peso": 92.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 11.0,
+                    "apg": 1.0,
+                    "rpg": 6.0,
+                    "spg": 0.4,
+                    "ovr": 25
+                },
+                {
+                    "nome": "Gabriele",
+                    "cognome": "Stefanini",
+                    "club": "Estra Pistoia",
+                    "altezza": 191.0,
+                    "peso": 95.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 12.8,
+                    "apg": 2.2,
+                    "rpg": 3.5,
+                    "spg": 1.1,
+                    "ovr": 25
+                },
+                {
+                    "nome": "Angelo",
+                    "cognome": "Del Chiaro",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 208.0,
+                    "peso": 104.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 6.3,
+                    "apg": 1.0,
+                    "rpg": 5.1,
+                    "spg": 0.8,
+                    "ovr": 25
+                },
+                {
+                    "nome": "Alvise",
+                    "cognome": "Sarto",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 200.0,
+                    "peso": 91.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 12.3,
+                    "apg": 1.4,
+                    "rpg": 3.6,
+                    "spg": 0.2,
+                    "ovr": 24
+                },
+                {
+                    "nome": "Antonio",
+                    "cognome": "Iannuzzi",
+                    "club": "Givova Scafati",
+                    "altezza": 207.0,
+                    "peso": 108.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 5.7,
+                    "apg": 0.7,
+                    "rpg": 5.1,
+                    "spg": 0.1,
+                    "ovr": 24
+                },
+                {
+                    "nome": "Raphael",
+                    "cognome": "Gaspardo",
+                    "club": "Unieuro Forlì",
+                    "altezza": 207.0,
+                    "peso": 100.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 12.3,
+                    "apg": 0.9,
+                    "rpg": 3.6,
+                    "spg": 0.5,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Ursulo",
+                    "cognome": "D'Almeida",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 200.0,
+                    "peso": 95.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 5.7,
+                    "apg": 0.6,
+                    "rpg": 4.3,
+                    "spg": 0.4,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Liam",
+                    "cognome": "Udom",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 199.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 11.4,
+                    "apg": 2.1,
+                    "rpg": 3.7,
+                    "spg": 1.3,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Ivan",
+                    "cognome": "Alipiev",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 203.0,
+                    "peso": 98.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 10.0,
+                    "apg": 1.3,
+                    "rpg": 5.4,
+                    "spg": 0.7,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Aanen",
+                    "cognome": "Moody",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 191.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 11.9,
+                    "apg": 2.6,
+                    "rpg": 2.9,
+                    "spg": 0.8,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Stefano",
+                    "cognome": "Gentile",
+                    "club": "Givova Scafati",
+                    "altezza": 191.0,
+                    "peso": 94.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.8,
+                    "apg": 2.6,
+                    "rpg": 3.8,
+                    "spg": 1.0,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Andrea",
+                    "cognome": "Loro",
+                    "club": "Tezenis Verona",
+                    "altezza": 202.0,
+                    "peso": 90.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 10.3,
+                    "apg": 0.8,
+                    "rpg": 5.6,
+                    "spg": 0.6,
+                    "ovr": 23
+                },
+                {
+                    "nome": "Blake",
+                    "cognome": "Francis",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 183.0,
+                    "peso": 79.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 12.85,
+                    "apg": 1.89,
+                    "rpg": 1.58,
+                    "spg": 0.54,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Samuele",
+                    "cognome": "Moretti",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 198.0,
+                    "peso": 95.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.4,
+                    "apg": 0.8,
+                    "rpg": 4.9,
+                    "spg": 0.46,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Ethan",
+                    "cognome": "Esposito",
+                    "club": "Valtur Brindisi",
+                    "altezza": 200.0,
+                    "peso": 104.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 10.2,
+                    "apg": 1.1,
+                    "rpg": 4.3,
+                    "spg": 0.6,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Travis",
+                    "cognome": "McConico",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 198.0,
+                    "peso": 91.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 10.5,
+                    "apg": 2.3,
+                    "rpg": 4.6,
+                    "spg": 1.0,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Kadeem",
+                    "cognome": "Allen",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 191.0,
+                    "peso": 91.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.3,
+                    "apg": 2.5,
+                    "rpg": 3.7,
+                    "spg": 1.2,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Simone",
+                    "cognome": "Pepe",
+                    "club": "Unieuro Forlì",
+                    "altezza": 184.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 12.1,
+                    "apg": 1.7,
+                    "rpg": 3.1,
+                    "spg": 0.5,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Federico",
+                    "cognome": "Massone",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 191.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.2,
+                    "apg": 2.8,
+                    "rpg": 3.0,
+                    "spg": 1.4,
+                    "ovr": 22
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Saccaggi",
+                    "club": "Estra Pistoia",
+                    "altezza": 188.0,
+                    "peso": 87.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.2,
+                    "apg": 3.6,
+                    "rpg": 2.8,
+                    "spg": 0.6,
+                    "ovr": 21
+                },
+                {
+                    "nome": "Mihailo",
+                    "cognome": "Jerkovic",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 204.0,
+                    "peso": 95.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 9.3,
+                    "apg": 0.6,
+                    "rpg": 5.1,
+                    "spg": 0.8,
+                    "ovr": 21
+                },
+                {
+                    "nome": "Massimiliano",
+                    "cognome": "Moretti",
+                    "club": "Sella Cento",
+                    "altezza": 203.0,
+                    "peso": 85.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 5.1,
+                    "apg": 0.4,
+                    "rpg": 3.4,
+                    "spg": 0.2,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Leonardo",
+                    "cognome": "Marangon",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 200.0,
+                    "peso": 97.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 9.8,
+                    "apg": 1.7,
+                    "rpg": 4.1,
+                    "spg": 1.1,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Panni",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 185.0,
+                    "peso": 84.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.1,
+                    "apg": 2.8,
+                    "rpg": 1.8,
+                    "spg": 0.7,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Vittorio",
+                    "cognome": "Bartoli",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 201.0,
+                    "peso": 105.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 7.8,
+                    "apg": 1.7,
+                    "rpg": 5.0,
+                    "spg": 0.6,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Andrea",
+                    "cognome": "Amato",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 190.0,
+                    "peso": 82.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 8.7,
+                    "apg": 3.7,
+                    "rpg": 1.7,
+                    "spg": 0.6,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Jazz",
+                    "cognome": "Johnson",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 178.0,
+                    "peso": 86.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.2,
+                    "apg": 2.2,
+                    "rpg": 2.7,
+                    "spg": 0.4,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Quirino",
+                    "cognome": "De Laurentiis",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 207.0,
+                    "peso": 106.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 5.0,
+                    "apg": 0.9,
+                    "rpg": 2.8,
+                    "spg": 0.5,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Daniele",
+                    "cognome": "Magro",
+                    "club": "Estra Pistoia",
+                    "altezza": 208.0,
+                    "peso": 112.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.5,
+                    "apg": 0.4,
+                    "rpg": 3.5,
+                    "spg": 0.5,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Giovanni",
+                    "cognome": "Tomassini",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 188.0,
+                    "peso": 84.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.6,
+                    "apg": 2.9,
+                    "rpg": 1.6,
+                    "spg": 0.6,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Davide",
+                    "cognome": "Bruttini",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 203.0,
+                    "peso": 103.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.3,
+                    "apg": 0.6,
+                    "rpg": 3.5,
+                    "spg": 0.5,
+                    "ovr": 20
+                },
+                {
+                    "nome": "Andrea",
+                    "cognome": "Zerini",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 205.0,
+                    "peso": 105.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.3,
+                    "apg": 4.2,
+                    "rpg": 1.2,
+                    "spg": 0.4,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Gabriele",
+                    "cognome": "Miani",
+                    "club": "Valtur Brindisi",
+                    "altezza": 204.0,
+                    "peso": 95.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "C",
+                    "ppg": 8.6,
+                    "apg": 0.9,
+                    "rpg": 4.3,
+                    "spg": 0.8,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Abdel",
+                    "cognome": "Fall",
+                    "club": "Sella Cento",
+                    "altezza": 202.0,
+                    "peso": 98.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.0,
+                    "apg": 0.5,
+                    "rpg": 3.8,
+                    "spg": 0.2,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Eugenio",
+                    "cognome": "Rota",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 178.0,
+                    "peso": 70.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.4,
+                    "apg": 3.8,
+                    "rpg": 2.8,
+                    "spg": 0.8,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Edoardo",
+                    "cognome": "Del Cadia",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 202.0,
+                    "peso": 115.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 3.6,
+                    "apg": 1.1,
+                    "rpg": 3.4,
+                    "spg": 0.5,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Penna",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 180.0,
+                    "peso": 82.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 6.7,
+                    "apg": 4.0,
+                    "rpg": 3.0,
+                    "spg": 1.6,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Parravicini",
+                    "club": "Gemini Mestre",
+                    "altezza": 187.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.9,
+                    "apg": 1.4,
+                    "rpg": 1.8,
+                    "spg": 0.6,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Cavallero",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 204.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 9.7,
+                    "apg": 1.0,
+                    "rpg": 4.7,
+                    "spg": 0.3,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Bertini",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 194.0,
+                    "peso": 87.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 9.9,
+                    "apg": 1.1,
+                    "rpg": 3.3,
+                    "spg": 1.2,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Octavio",
+                    "cognome": "Maretto",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 197.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.1,
+                    "apg": 1.4,
+                    "rpg": 4.1,
+                    "spg": 0.9,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Mattia",
+                    "cognome": "Palumbo",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 198.0,
+                    "peso": 95.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.4,
+                    "apg": 2.7,
+                    "rpg": 4.4,
+                    "spg": 0.8,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Giorgio",
+                    "cognome": "Piunti",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 205.0,
+                    "peso": 95.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.6,
+                    "apg": 0.7,
+                    "rpg": 2.7,
+                    "spg": 0.5,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Caroti",
+                    "club": "Givova Scafati",
+                    "altezza": 185.0,
+                    "peso": 75.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.6,
+                    "apg": 2.2,
+                    "rpg": 1.6,
+                    "spg": 0.7,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Schina",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 182.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 8.1,
+                    "apg": 3.4,
+                    "rpg": 2.2,
+                    "spg": 1.1,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Marco",
+                    "cognome": "Cusin",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 211.0,
+                    "peso": 107.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 3.2,
+                    "apg": 0.5,
+                    "rpg": 3.9,
+                    "spg": 0.2,
+                    "ovr": 19
+                },
+                {
+                    "nome": "Martino",
+                    "cognome": "Mastellari",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 194.0,
+                    "peso": 94.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 10.3,
+                    "apg": 1.6,
+                    "rpg": 1.3,
+                    "spg": 0.5,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Tommaso",
+                    "cognome": "Vecchiola",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 185.0,
+                    "peso": 79.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 6.4,
+                    "apg": 3.7,
+                    "rpg": 3.0,
+                    "spg": 1.4,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Pietro",
+                    "cognome": "Aradori",
+                    "club": "Unieuro Forlì",
+                    "altezza": 194.0,
+                    "peso": 95.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 9.8,
+                    "apg": 1.3,
+                    "rpg": 2.7,
+                    "spg": 0.4,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Fabio",
+                    "cognome": "Valentini",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 185.0,
+                    "peso": 84.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 8.6,
+                    "apg": 2.7,
+                    "rpg": 1.9,
+                    "spg": 0.7,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Serapin",
+                    "cognome": "Boussounka",
+                    "club": "Gemini Mestre",
+                    "altezza": 213.0,
+                    "peso": 105.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 2.4,
+                    "apg": 0.1,
+                    "rpg": 4.1,
+                    "spg": 0.1,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Daniele",
+                    "cognome": "Cinciarini",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 193.0,
+                    "peso": 88.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.8,
+                    "apg": 1.3,
+                    "rpg": 2.1,
+                    "spg": 0.5,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Abramo",
+                    "cognome": "Canka",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 198.0,
+                    "peso": 91.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.1,
+                    "apg": 0.9,
+                    "rpg": 4.3,
+                    "spg": 0.4,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Tommaso",
+                    "cognome": "Laquintana",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 188.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 8.1,
+                    "apg": 2.5,
+                    "rpg": 3.5,
+                    "spg": 0.9,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Aristide",
+                    "cognome": "Landi",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 202.0,
+                    "peso": 103.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 4.5,
+                    "apg": 0.7,
+                    "rpg": 2.3,
+                    "spg": 0.2,
+                    "ovr": 18
+                },
+                {
+                    "nome": "Rei",
+                    "cognome": "Pullaz",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 203.0,
+                    "peso": 100.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 8.0,
+                    "apg": 1.55,
+                    "rpg": 3.09,
+                    "spg": 0.0,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Gianluca",
+                    "cognome": "Della Rosa",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 183.0,
+                    "peso": 73.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.1,
+                    "apg": 3.5,
+                    "rpg": 2.0,
+                    "spg": 0.8,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Todor",
+                    "cognome": "Radonjic",
+                    "club": "Valtur Brindisi",
+                    "altezza": 197.0,
+                    "peso": 94.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 7.5,
+                    "apg": 0.9,
+                    "rpg": 4.0,
+                    "spg": 0.5,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Luca",
+                    "cognome": "Conti",
+                    "club": "Sella Cento",
+                    "altezza": 195.0,
+                    "peso": 87.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 8.4,
+                    "apg": 1.3,
+                    "rpg": 3.9,
+                    "spg": 0.8,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Giulio",
+                    "cognome": "Gazzotti",
+                    "club": "Unieuro Forlì",
+                    "altezza": 202.0,
+                    "peso": 104.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 2.1,
+                    "apg": 0.6,
+                    "rpg": 3.5,
+                    "spg": 0.3,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Costantino",
+                    "cognome": "Bechi",
+                    "club": "Gemini Mestre",
+                    "altezza": 186.0,
+                    "peso": 76.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.1,
+                    "apg": 3.0,
+                    "rpg": 2.6,
+                    "spg": 0.6,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Nicolò",
+                    "cognome": "Virginio",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 204.0,
+                    "peso": 85.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 8.2,
+                    "apg": 0.7,
+                    "rpg": 3.6,
+                    "spg": 0.4,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Filippo",
+                    "cognome": "Gallo",
+                    "club": "Estra Pistoia",
+                    "altezza": 194.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.2,
+                    "apg": 2.6,
+                    "rpg": 3.3,
+                    "spg": 0.6,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Danilo",
+                    "cognome": "Petrovic",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 203.0,
+                    "peso": 109.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 8.3,
+                    "apg": 0.7,
+                    "rpg": 2.9,
+                    "spg": 0.4,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Filippo",
+                    "cognome": "Baldi Rossi",
+                    "club": "Tezenis Verona",
+                    "altezza": 208.0,
+                    "peso": 101.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 8.3,
+                    "apg": 1.1,
+                    "rpg": 3.0,
+                    "spg": 0.5,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Ambrosin",
+                    "club": "Tezenis Verona",
+                    "altezza": 195.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 9.6,
+                    "apg": 0.7,
+                    "rpg": 3.1,
+                    "spg": 1.0,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Diego",
+                    "cognome": "Monaldi",
+                    "club": "Tezenis Verona",
+                    "altezza": 185.0,
+                    "peso": 78.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.5,
+                    "apg": 2.8,
+                    "rpg": 1.7,
+                    "spg": 0.5,
+                    "ovr": 17
+                },
+                {
+                    "nome": "Simon",
+                    "cognome": "Anumba",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 196.0,
+                    "peso": 102.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 7.2,
+                    "apg": 0.9,
+                    "rpg": 3.8,
+                    "spg": 0.4,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Gregorio",
+                    "cognome": "Allinei",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 194.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 9.0,
+                    "apg": 0.9,
+                    "rpg": 2.1,
+                    "spg": 0.4,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Luca",
+                    "cognome": "Tozzi",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 200.0,
+                    "peso": 93.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 7.9,
+                    "apg": 0.9,
+                    "rpg": 3.2,
+                    "spg": 0.5,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Nicola",
+                    "cognome": "Giordano",
+                    "club": "Gemini Mestre",
+                    "altezza": 186.0,
+                    "peso": 77.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 8.0,
+                    "apg": 1.9,
+                    "rpg": 1.8,
+                    "spg": 0.5,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Federico",
+                    "cognome": "Bonacini",
+                    "club": "Gemini Mestre",
+                    "altezza": 190.0,
+                    "peso": 87.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.9,
+                    "apg": 1.6,
+                    "rpg": 2.7,
+                    "spg": 1.0,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Gherardo",
+                    "cognome": "Sabatini",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 183.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 6.2,
+                    "apg": 2.9,
+                    "rpg": 3.3,
+                    "spg": 1.1,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Morgillo",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 204.0,
+                    "peso": 108.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 3.3,
+                    "apg": 0.4,
+                    "rpg": 2.3,
+                    "spg": 0.2,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Nicolò",
+                    "cognome": "Nobili",
+                    "club": "Givova Scafati",
+                    "altezza": 208.0,
+                    "peso": 100.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 3.1,
+                    "apg": 0.1,
+                    "rpg": 2.6,
+                    "spg": 0.1,
+                    "ovr": 16
+                },
+                {
+                    "nome": "Alexander",
+                    "cognome": "Cicchetti",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 200.0,
+                    "peso": 90.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 7.32,
+                    "apg": 0.82,
+                    "rpg": 2.68,
+                    "spg": 0.21,
+                    "ovr": 15
+                },
+                {
+                    "nome": "Cosimo",
+                    "cognome": "Costi",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 203.0,
+                    "peso": 90.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 5.9,
+                    "apg": 1.4,
+                    "rpg": 3.9,
+                    "spg": 0.4,
+                    "ovr": 15
+                },
+                {
+                    "nome": "Riccardo",
+                    "cognome": "Tavernelli",
+                    "club": "Unieuro Forlì",
+                    "altezza": 188.0,
+                    "peso": 82.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.1,
+                    "apg": 2.9,
+                    "rpg": 3.7,
+                    "spg": 1.1,
+                    "ovr": 15
+                },
+                {
+                    "nome": "Ariel",
+                    "cognome": "Filloy",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 190.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.1,
+                    "apg": 2.0,
+                    "rpg": 2.3,
+                    "spg": 0.8,
+                    "ovr": 15
+                },
+                {
+                    "nome": "Samuele",
+                    "cognome": "Miccoli",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 190.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.9,
+                    "apg": 2.9,
+                    "rpg": 1.8,
+                    "spg": 0.7,
+                    "ovr": 15
+                },
+                {
+                    "nome": "Marco",
+                    "cognome": "Mollura",
+                    "club": "Givova Scafati",
+                    "altezza": 198.0,
+                    "peso": 90.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 7.4,
+                    "apg": 0.9,
+                    "rpg": 2.5,
+                    "spg": 0.6,
+                    "ovr": 15
+                },
+                {
+                    "nome": "Mikk",
+                    "cognome": "Jurkatamm",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 195.0,
+                    "peso": 81.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 6.69,
+                    "apg": 1.83,
+                    "rpg": 1.74,
+                    "spg": 0.09,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Giovanni",
+                    "cognome": "Pini",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 205.0,
+                    "peso": 100.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 2.39,
+                    "apg": 0.9,
+                    "rpg": 1.42,
+                    "spg": 0.1,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Luca",
+                    "cognome": "Cesena",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 196.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 7.7,
+                    "apg": 0.9,
+                    "rpg": 1.4,
+                    "spg": 0.5,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Ion",
+                    "cognome": "Lupusor",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 202.0,
+                    "peso": 97.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 6.8,
+                    "apg": 0.7,
+                    "rpg": 2.8,
+                    "spg": 0.2,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Fabio",
+                    "cognome": "Mian",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 196.0,
+                    "peso": 88.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 7.9,
+                    "apg": 1.2,
+                    "rpg": 1.1,
+                    "spg": 0.2,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Michele",
+                    "cognome": "Serpilli",
+                    "club": "Tezenis Verona",
+                    "altezza": 200.0,
+                    "peso": 95.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "C",
+                    "ppg": 5.7,
+                    "apg": 0.6,
+                    "rpg": 4.1,
+                    "spg": 0.5,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Riccardo",
+                    "cognome": "Bolpin",
+                    "club": "Tezenis Verona",
+                    "altezza": 197.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.7,
+                    "apg": 2.4,
+                    "rpg": 2.7,
+                    "spg": 0.6,
+                    "ovr": 14
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Imbrò",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 192.0,
+                    "peso": 86.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 6.1,
+                    "apg": 1.4,
+                    "rpg": 2.0,
+                    "spg": 0.4,
+                    "ovr": 13
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Montano",
+                    "club": "Sella Cento",
+                    "altezza": 190.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 6.7,
+                    "apg": 1.3,
+                    "rpg": 1.7,
+                    "spg": 0.6,
+                    "ovr": 13
+                },
+                {
+                    "nome": "Matteo",
+                    "cognome": "Piccoli",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 195.0,
+                    "peso": 91.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 4.7,
+                    "apg": 1.8,
+                    "rpg": 4.4,
+                    "spg": 1.3,
+                    "ovr": 13
+                },
+                {
+                    "nome": "Nicolas",
+                    "cognome": "Alessandrin",
+                    "club": "Estra Pistoia",
+                    "altezza": 203.0,
+                    "peso": 98.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 5.3,
+                    "apg": 0.6,
+                    "rpg": 3.4,
+                    "spg": 0.3,
+                    "ovr": 13
+                },
+                {
+                    "nome": "Alessio",
+                    "cognome": "Donadoni",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 197.0,
+                    "peso": 87.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 5.5,
+                    "apg": 1.3,
+                    "rpg": 2.5,
+                    "spg": 0.7,
+                    "ovr": 13
+                },
+                {
+                    "nome": "Nazzareno",
+                    "cognome": "Italiano",
+                    "club": "Givova Scafati",
+                    "altezza": 198.0,
+                    "peso": 103.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 5.4,
+                    "apg": 0.9,
+                    "rpg": 3.2,
+                    "spg": 0.5,
+                    "ovr": 13
+                },
+                {
+                    "nome": "Aristide",
+                    "cognome": "Mouaha",
+                    "club": "Valtur Brindisi",
+                    "altezza": 192.0,
+                    "peso": 86.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 4.9,
+                    "apg": 1.2,
+                    "rpg": 3.0,
+                    "spg": 0.7,
+                    "ovr": 12
+                },
+                {
+                    "nome": "Davide",
+                    "cognome": "Pascolo",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 201.0,
+                    "peso": 90.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 4.6,
+                    "apg": 0.9,
+                    "rpg": 3.0,
+                    "spg": 0.4,
+                    "ovr": 12
+                },
+                {
+                    "nome": "Marco",
+                    "cognome": "Timperi",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 194.0,
+                    "peso": 85.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 4.9,
+                    "apg": 0.8,
+                    "rpg": 3.6,
+                    "spg": 0.7,
+                    "ovr": 12
+                },
+                {
+                    "nome": "Micheal",
+                    "cognome": "Anumba",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 192.0,
+                    "peso": 101.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 5.2,
+                    "apg": 1.2,
+                    "rpg": 2.5,
+                    "spg": 0.8,
+                    "ovr": 12
+                },
+                {
+                    "nome": "Bernardo",
+                    "cognome": "Musso",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 193.0,
+                    "peso": 89.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.0,
+                    "apg": 1.8,
+                    "rpg": 2.0,
+                    "spg": 0.8,
+                    "ovr": 12
+                },
+                {
+                    "nome": "Aleksa",
+                    "cognome": "Nikolic",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 205.0,
+                    "peso": 95.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 4.9,
+                    "apg": 0.5,
+                    "rpg": 3.5,
+                    "spg": 0.6,
+                    "ovr": 12
+                },
+                {
+                    "nome": "Stefano",
+                    "cognome": "Masciadri",
+                    "club": "Unieuro Forlì",
+                    "altezza": 200.0,
+                    "peso": 100.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 4.8,
+                    "apg": 0.5,
+                    "rpg": 2.6,
+                    "spg": 0.4,
+                    "ovr": 11
+                },
+                {
+                    "nome": "Nicolò",
+                    "cognome": "Filoni",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 198.0,
+                    "peso": 92.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 4.5,
+                    "apg": 0.7,
+                    "rpg": 3.5,
+                    "spg": 1.0,
+                    "ovr": 11
+                },
+                {
+                    "nome": "Fainke",
+                    "cognome": "Elhadji",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 202.0,
+                    "peso": 94.0,
+                    "ruolo1": "C",
+                    "ruolo2": "C",
+                    "ppg": 0.9,
+                    "apg": 0.0,
+                    "rpg": 1.0,
+                    "spg": 0.0,
+                    "ovr": 11
+                },
+                {
+                    "nome": "Stefano",
+                    "cognome": "Saccoccia",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 178.0,
+                    "peso": 75.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.0,
+                    "apg": 1.9,
+                    "rpg": 0.6,
+                    "spg": 0.2,
+                    "ovr": 11
+                },
+                {
+                    "nome": "Assane",
+                    "cognome": "Sankare",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 204.0,
+                    "peso": 100.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 4.1,
+                    "apg": 0.5,
+                    "rpg": 4.1,
+                    "spg": 0.4,
+                    "ovr": 11
+                },
+                {
+                    "nome": "Antonio",
+                    "cognome": "Sabatino",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 184.0,
+                    "peso": 81.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.8,
+                    "apg": 1.2,
+                    "rpg": 1.2,
+                    "spg": 0.6,
+                    "ovr": 11
+                },
+                {
+                    "nome": "Lucas",
+                    "cognome": "Fresno",
+                    "club": "Unicusano Avellino Basket",
+                    "altezza": 194.0,
+                    "peso": 89.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 4.87,
+                    "apg": 1.07,
+                    "rpg": 1.8,
+                    "spg": 0.2,
+                    "ovr": 10
+                },
+                {
+                    "nome": "Niccolò",
+                    "cognome": "De Vico",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 198.0,
+                    "peso": 94.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 4.67,
+                    "apg": 0.24,
+                    "rpg": 2.2,
+                    "spg": 0.38,
+                    "ovr": 10
+                },
+                {
+                    "nome": "Stefano",
+                    "cognome": "Trucchetti",
+                    "club": "Victoria Libertas Pesaro",
+                    "altezza": 179.0,
+                    "peso": 83.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 4.7,
+                    "apg": 1.5,
+                    "rpg": 1.2,
+                    "spg": 0.5,
+                    "ovr": 10
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Piccin",
+                    "club": "RSR Sebastiani Rieti",
+                    "altezza": 191.0,
+                    "peso": 80.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 5.0,
+                    "apg": 0.6,
+                    "rpg": 2.1,
+                    "spg": 0.3,
+                    "ovr": 10
+                },
+                {
+                    "nome": "Thomas",
+                    "cognome": "Reale",
+                    "club": "Crifo Wines Ruvo di Puglia",
+                    "altezza": 179.0,
+                    "peso": 74.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 4.8,
+                    "apg": 1.3,
+                    "rpg": 0.9,
+                    "spg": 0.8,
+                    "ovr": 10
+                },
+                {
+                    "nome": "Nicolas",
+                    "cognome": "Tanfoglio",
+                    "club": "Sella Cento",
+                    "altezza": 180.0,
+                    "peso": 75.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 4.4,
+                    "apg": 0.9,
+                    "rpg": 1.5,
+                    "spg": 0.1,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Ferrari",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 200.0,
+                    "peso": 80.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 3.5,
+                    "apg": 0.7,
+                    "rpg": 3.2,
+                    "spg": 0.2,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Francesco",
+                    "cognome": "Reggiani",
+                    "club": "Gemini Mestre",
+                    "altezza": 195.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 4.4,
+                    "apg": 0.4,
+                    "rpg": 2.9,
+                    "spg": 0.2,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Nicolò",
+                    "cognome": "Dellosto",
+                    "club": "Estra Pistoia",
+                    "altezza": 200.0,
+                    "peso": 99.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 3.6,
+                    "apg": 0.5,
+                    "rpg": 2.3,
+                    "spg": 0.3,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Giacomo",
+                    "cognome": "Leardini",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 198.0,
+                    "peso": 100.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 3.8,
+                    "apg": 0.9,
+                    "rpg": 2.3,
+                    "spg": 0.6,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Luca",
+                    "cognome": "Pollone",
+                    "club": "Dole Basket Rimini",
+                    "altezza": 197.0,
+                    "peso": 92.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 3.8,
+                    "apg": 0.6,
+                    "rpg": 2.6,
+                    "spg": 0.5,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Giovanni",
+                    "cognome": "Severini",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 196.0,
+                    "peso": 94.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 4.3,
+                    "apg": 0.5,
+                    "rpg": 2.3,
+                    "spg": 0.5,
+                    "ovr": 9
+                },
+                {
+                    "nome": "Andrea",
+                    "cognome": "La Torre",
+                    "club": "Ferraroni Juvi Cremona",
+                    "altezza": 204.0,
+                    "peso": 100.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "PF",
+                    "ppg": 2.9,
+                    "apg": 0.8,
+                    "rpg": 2.1,
+                    "spg": 0.5,
+                    "ovr": 8
+                },
+                {
+                    "nome": "Tommaso",
+                    "cognome": "Pinza",
+                    "club": "Unieuro Forlì",
+                    "altezza": 189.0,
+                    "peso": 82.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 3.6,
+                    "apg": 1.0,
+                    "rpg": 1.0,
+                    "spg": 0.4,
+                    "ovr": 8
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Tortù",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 202.0,
+                    "peso": 93.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 3.3,
+                    "apg": 0.4,
+                    "rpg": 2.4,
+                    "spg": 0.4,
+                    "ovr": 8
+                },
+                {
+                    "nome": "Vincenzo",
+                    "cognome": "Guaiana",
+                    "club": "Flats Service Fortitudo Bologna",
+                    "altezza": 195.0,
+                    "peso": 88.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 3.15,
+                    "apg": 0.79,
+                    "rpg": 2.03,
+                    "spg": 0.39,
+                    "ovr": 7
+                },
+                {
+                    "nome": "Tommaso",
+                    "cognome": "Fantoni",
+                    "club": "Bi.Emme Service Libertas Livorn",
+                    "altezza": 206.0,
+                    "peso": 112.0,
+                    "ruolo1": "PF",
+                    "ruolo2": "C",
+                    "ppg": 2.3,
+                    "apg": 0.7,
+                    "rpg": 2.5,
+                    "spg": 0.1,
+                    "ovr": 7
+                },
+                {
+                    "nome": "Lorenzo",
+                    "cognome": "Maspero",
+                    "club": "Valtur Brindisi",
+                    "altezza": 184.0,
+                    "peso": 76.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 2.1,
+                    "apg": 1.3,
+                    "rpg": 1.3,
+                    "spg": 0.8,
+                    "ovr": 6
+                },
+                {
+                    "nome": "Gianmarco",
+                    "cognome": "Arletti",
+                    "club": "Sella Cento",
+                    "altezza": 198.0,
+                    "peso": 93.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 2.8,
+                    "apg": 0.4,
+                    "rpg": 2.1,
+                    "spg": 0.4,
+                    "ovr": 6
+                },
+                {
+                    "nome": "Alessandro",
+                    "cognome": "Amici",
+                    "club": "UEB Gesteco Cividale",
+                    "altezza": 200.0,
+                    "peso": 95.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "PF",
+                    "ppg": 2.6,
+                    "apg": 0.9,
+                    "rpg": 1.1,
+                    "spg": 0.1,
+                    "ovr": 6
+                },
+                {
+                    "nome": "Saverio",
+                    "cognome": "Bartoli",
+                    "club": "Givova Scafati",
+                    "altezza": 194.0,
+                    "peso": 89.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 2.1,
+                    "apg": 1.2,
+                    "rpg": 1.5,
+                    "spg": 0.1,
+                    "ovr": 6
+                },
+                {
+                    "nome": "Umberto",
+                    "cognome": "Stazzonelli",
+                    "club": "Reale Mutua Torino",
+                    "altezza": 200.0,
+                    "peso": 95.0,
+                    "ruolo1": "SF",
+                    "ruolo2": "SF",
+                    "ppg": 2.8,
+                    "apg": 0.3,
+                    "rpg": 1.4,
+                    "spg": 0.3,
+                    "ovr": 6
+                },
+                {
+                    "nome": "Adrian",
+                    "cognome": "Chiera",
+                    "club": "Givova Scafati",
+                    "altezza": 191.0,
+                    "peso": 85.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 2.5,
+                    "apg": 0.4,
+                    "rpg": 1.3,
+                    "spg": 0.2,
+                    "ovr": 5
+                },
+                {
+                    "nome": "Tommaso",
+                    "cognome": "Fantoma",
+                    "club": "Valtur Brindisi",
+                    "altezza": 197.0,
+                    "peso": 94.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "SF",
+                    "ppg": 2.0,
+                    "apg": 0.2,
+                    "rpg": 0.9,
+                    "spg": 0.2,
+                    "ovr": 4
+                },
+                {
+                    "nome": "Federico",
+                    "cognome": "Stoch",
+                    "club": "Estra Pistoia",
+                    "altezza": 190.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 2.0,
+                    "apg": 0.6,
+                    "rpg": 0.7,
+                    "spg": 0.2,
+                    "ovr": 4
+                },
+                {
+                    "nome": "Filippo",
+                    "cognome": "Gaeta",
+                    "club": "Liofilchem Roseto",
+                    "altezza": 190.0,
+                    "peso": 90.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 2.3,
+                    "apg": 0.2,
+                    "rpg": 1.1,
+                    "spg": 0.0,
+                    "ovr": 4
+                },
+                {
+                    "nome": "Morgan",
+                    "cognome": "Rashed",
+                    "club": "Wegreenit Urania Milano",
+                    "altezza": 202.0,
+                    "peso": 80.0,
+                    "ruolo1": "PG",
+                    "ruolo2": "PG",
+                    "ppg": 0.8,
+                    "apg": 0.2,
+                    "rpg": 0.8,
+                    "spg": 0.1,
+                    "ovr": 2
+                }
+            
+        ];
+
+        const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean);
+        const orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
+        let currentDraftStep = 0;
+        let userTeam = {};
+        let wins = 0;
+        let losses = 0;
+        let currentMatchNumber = 1;
+        let schedule = [];
+
+        function startDraftProcess() {
+            document.getElementById('btn-start-draft').disabled = true;
+            document.getElementById('draft-panel').style.opacity = "1";
+            currentDraftStep = 0;
+            userTeam = {};
+
+            orderRoles.forEach(role => {
+                const slot = document.getElementById(`court-${role}`);
+                slot.className = "court-player-slot";
+                slot.innerHTML = `<span class="role-indicator">${role}</span><div class="p-name">?</div><div class="p-club">-</div>`;
+            });
+
+            renderDraftRound();
+        }
+
+        function renderDraftRound() {
+            if(currentDraftStep >= orderRoles.length) {
+                document.getElementById('draft-title-text').innerText = "Draft Completato!";
+                document.getElementById('draft-options-container').innerHTML = '<div style="color:var(--success); font-weight:bold; padding:15px; text-align:center; grid-column: span 5;">Roster completato! Clicca su "GIOCA PARTITA".</div>';
+                generateLnpSchedule();
+                document.getElementById('btn-play-game').disabled = false;
+                updateMatchBanner();
+                return;
+            }
+
+            const activeRole = orderRoles[currentDraftStep];
+            document.getElementById('draft-title-text').innerHTML = `Fase ${currentDraftStep + 1}: Scegli il tuo <span style="color:var(--lnp-orange);">${activeRole}</span>`;
+
+            let pool = [];
+            if (activeRole === 'SG') {
+                pool = allPlayers.filter(p => p.ruolo1 === 'PG' || p.ruolo1 === 'SF' || p.ruolo2 === 'PG');
+            } else {
+                pool = allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
+            }
+            if(pool.length < 5) pool = allPlayers;
+
+            const currentSelectedCognomi = Object.values(userTeam).map(p => p.cognome);
+            pool = pool.filter(p => !currentSelectedCognomi.includes(p.cognome));
+
+            let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
+            const container = document.getElementById('draft-options-container');
+            container.innerHTML = '';
+
+            choices.forEach(player => {
+                const card = document.createElement('div');
+                card.className = 'draft-option-card';
+                const safeString = encodeURIComponent(JSON.stringify(player));
+
+                card.innerHTML = `
+                    <div>
+                        <div class="p-name" style="color:var(--lnp-orange); font-size:1rem;">${player.cognome}</div>
+                        <div class="p-club" style="font-size:0.65rem; margin-bottom: 8px;">${player.club}</div>
+                    </div>
+                    <div class="p-stats-mini">
+                        <span>P: <strong>${player.ppg || 0}</strong></span>
+                        <span>A: <strong>${player.apg || 0}</strong></span>
+                        <span>R: <strong>${player.rpg || 0}</strong></span>
+                        <span>S: <strong>${player.spg || 0}</strong></span>
+                    </div>
+                    <button class="btn-choose" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function pickPlayer(role, encodedData) {
+            const player = JSON.parse(decodeURIComponent(encodedData));
+            userTeam[role] = player;
+
+            const slotElement = document.getElementById(`court-${role}`);
+            slotElement.className = "court-player-slot filled";
+            slotElement.innerHTML = `
+                <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span>
+                <div class="p-name" style="color:white;">${player.cognome}</div>
+                <div class="p-club">${player.club}</div>
+                <div class="p-stats-mini">
+                    <span>PTS: ${player.ppg || 0}</span>
+                    <span>AST: ${player.apg || 0}</span>
+                </div>
+            `;
+
+            currentDraftStep++;
+            renderDraftRound();
+        }
+
+        function generateLnpSchedule() {
+            schedule = [];
+            const listContainer = document.getElementById('calendar-render-box');
+            listContainer.innerHTML = '';
+
+            for(let i = 1; i <= 38; i++) {
+                const randomOpponent = opponentTeams[Math.floor(Math.random() * opponentTeams.length)];
+                schedule.push({ match: i, team: randomOpponent, played: false, result: "", mvp: "" });
+
+                const li = document.createElement('li');
+                li.className = 'calendar-item';
+                li.id = `cal-item-${i}`;
+                li.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <span><strong>Gara ${i}</strong>: vs ${randomOpponent}</span>
+                        <strong id="score-${i}" style="font-size:0.9rem;">-</strong>
+                    </div>
+                    <div class="cal-row-mvp" id="mvp-${i}"></div>
+                `;
+                listContainer.appendChild(li);
+            }
+        }
+
+        function updateMatchBanner() {
+            if(currentMatchNumber <= 38) {
+                const nextOpp = schedule[currentMatchNumber - 1].team;
+                document.getElementById('banner-main-text').innerHTML = `PROSSIMO TURNO LNP: <strong style="color:var(--lnp-orange);">${nextOpp}</strong> | <span style="color:var(--text-muted);">GARA ${currentMatchNumber}/38</span>`;
+            }
+        }
+
+        function simMatch() {
+            if (currentMatchNumber > 38 || losses > 0) return;
+
+            // ABILITA MODALITÀ GIOCO (Il campo si restringe visivamente)
+            document.getElementById('main-game-viewport').classList.add('game-mode');
+
+            const matchButton = document.getElementById('btn-play-game');
+            matchButton.disabled = true;
+
+            const matchData = schedule[currentMatchNumber - 1];
+            const opponentName = matchData.team;
+            const playersArray = Object.values(userTeam);
+
+            const matchPace = Math.round(70 + Math.random() * 16);
+            const myTeamOvrSum = playersArray.reduce((acc, p) => acc + p.ovr, 0) / 5;
+
+            const userShootingLuck = (Math.random() * 26) - 11;
+            const userEfficiency = 0.65 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
+            let finalUserScore = Math.round(matchPace * userEfficiency);
+
+            const oppPlayers = allPlayers.filter(p => p.club === opponentName);
+            const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + p.ovr, 0) / oppPlayers.length : 65;
+
+            const oppShootingLuck = (Math.random() * 36) - 13;
+            const oppEfficiency = 0.68 + (oppAvgOvr * 0.0038) + (oppShootingLuck / 100);
+            let finalOppScore = Math.round(matchPace * oppEfficiency);
+
+            if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
+
+            // Algoritmo Bilanciamento per l'MVP del match
+            let topScorer = playersArray[0];
+            let maxUsage = 0;
+            playersArray.forEach(p => {
+                const usageFactor = p.ppg * (0.65 + Math.random() * 0.75) + (p.apg * 1.1) + (p.rpg * 0.5);
+                if(usageFactor > maxUsage) {
+                    maxUsage = usageFactor;
+                    topScorer = p;
+                }
+            });
+
+            const formOfTheDay = 0.6 + (Math.random() * 0.8);
+            let mvpPts = Math.round(topScorer.ppg * formOfTheDay + (finalUserScore * 0.04));
+            if(mvpPts > finalUserScore * 0.42) mvpPts = Math.round(finalUserScore * 0.38);
+
+            const mvpReb = Math.round(topScorer.rpg * (0.5 + Math.random() * 1.2));
+            const mvpAst = Math.round(topScorer.apg * (0.4 + Math.random() * 1.3));
+            const mvpStl = Math.round(topScorer.spg * (0.3 + Math.random() * 1.5));
+            const completeMvpStats = `${topScorer.cognome} (${mvpPts}pt, ${mvpReb}rb, ${mvpAst}as, ${mvpStl}rub)`;
+
+            let currentLiveUser = 0;
+            let currentLiveOpp = 0;
+            const ticker = document.getElementById('live-simulation-ticker');
+            let currentStep = 0;
+            const totalSteps = 12;
+
+            const interval = setInterval(() => {
+                currentStep++;
+                currentLiveUser = Math.round((finalUserScore / totalSteps) * currentStep);
+                currentLiveOpp = Math.round((finalOppScore / totalSteps) * currentStep);
+
+                const commentaries = ["Giro palla LNP...", "Contropiede rapido!", "Fase difensiva intensa...", "Tripla dall'angolo!", "Rimbalzo lottato in area!"];
+                ticker.innerText = `LIVE: ${currentLiveUser} - ${currentLiveOpp} (${commentaries[Math.floor(Math.random() * commentaries.length)]})`;
+
+                if (currentStep >= totalSteps) {
+                    clearInterval(interval);
+                    ticker.innerText = `FINALE: ${finalUserScore} - ${finalOppScore}`;
+
+                    const isWin = finalUserScore > finalOppScore;
+                    matchData.played = true;
+                    matchData.result = `${finalUserScore} - ${finalOppScore}`;
+                    matchData.mvp = completeMvpStats;
+
+                    const calRow = document.getElementById(`cal-item-${currentMatchNumber}`);
+                    const scoreText = document.getElementById(`score-${currentMatchNumber}`);
+                    const mvpText = document.getElementById(`mvp-${currentMatchNumber}`);
+
+                    scoreText.innerText = matchData.result;
+                    mvpText.innerText = `MVP: ${matchData.mvp}`;
+                    calRow.className = `calendar-item ${isWin ? 'win' : 'loss'}`;
+                    calRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                    if(isWin) {
+                        wins++;
+                        document.getElementById('w-counter').innerText = wins;
+                        currentMatchNumber++;
+                        if(wins === 38) {
+                            endGameTrigger(true, `STORIA DELL'LNP! 38-0 perfetto! Il tuo quintetto entra di diritto nella leggenda del basket italiano.`);
+                        } else {
+                            updateMatchBanner();
+                            matchButton.disabled = false;
+                        }
+                    } else {
+                        losses++;
+                        document.getElementById('l-counter').innerText = losses;
+                        endGameTrigger(false, `Il cammino perfetto si interrompe a Gara ${currentMatchNumber}. ${opponentName} espugna il tuo parquet vincendo ${finalOppScore}-${finalUserScore}. Record: ${wins}-1.`);
+                    }
+                }
+            }, 90);
+        }
+
+        function endGameTrigger(isSuccess, message) {
+            const overlay = document.getElementById('end-screen');
+            document.getElementById('end-title').innerText = isSuccess ? "🏆 RECORD PERFETTO 38-0! 🏆" : "❌ CHALLENGE FALLITA";
+            document.getElementById('end-title').style.color = isSuccess ? "var(--success)" : "var(--danger)";
+            document.getElementById('end-msg').innerText = message;
+            overlay.style.display = 'flex';
+        }</script>
+</body>
+</html>
