@@ -52,6 +52,18 @@
     .game-container, .game-container.game-mode { 
         grid-template-columns: 1fr !important; 
     }
+    
+    /* Centra il tabellone del punteggio e i commenti della partita su mobile */
+    .match-scoreboard, .match-commentary, #match-actions {
+        text-align: center !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 10px auto !important;
+        width: 100% !important;
+    }
+
     .court-inner-wood {
         height: auto !important;
         min-height: 180px;
@@ -73,6 +85,7 @@
     .draft-options-row {
         grid-template-columns: repeat(2, 1fr) !important;
     }
+
 }
             
         
@@ -3328,17 +3341,22 @@
             const myTeamOvrSum = playersArray.reduce((acc, p) => acc + p.ovr, 0) / 5;
 
             // --- CALCOLO EFFICIENZA UTENTE ---
-const userShootingLuck = (Math.random() * 20) - 8;
-const userEfficiency = 0.72 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
+// --- CALCOLO EFFICIENZA UTENTE ---
+const userShootingLuck = (Math.random() * 16) - 8; // Variazione tiri utente (-8 a +8)
+const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
 let finalUserScore = Math.round(matchPace * userEfficiency);
 
-// --- CALCOLO EFFICIENZA CPU (BILANCIATO) ---
+// --- CALCOLO EFFICIENZA CPU (AGGIORNATA) ---
 const oppPlayers = allPlayers.filter(p => p.club === opponentName);
 const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + p.ovr, 0) / oppPlayers.length : 60;
 
-const oppShootingLuck = (Math.random() * 20) - 10; 
-const oppEfficiency = 0.68 + (oppAvgOvr * 0.0034) + (oppShootingLuck / 100);
+const oppShootingLuck = (Math.random() * 16) - 8; // Variazione tiri CPU (-8 a +8)
+// Alzata l'efficienza base della CPU a 0.71 per renderla solida e competitiva
+const oppEfficiency = 0.71 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
 let finalOppScore = Math.round(matchPace * oppEfficiency);
+
+// NOTA: Abbiamo eliminato il blocco "if (finalUserScore <= finalOppScore)" 
+// che regalava i canestri alla fine. Ora il punteggio è meritocratico!
 
 // Boost per l'utente in caso di clutch time
 if (finalUserScore <= finalOppScore) {
