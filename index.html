@@ -1,8 +1,8 @@
-﻿<!DOCTYPE html>
+﻿      <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LNP GUESSER 38-0</title>
     <style>
         :root {
@@ -43,53 +43,55 @@
             transition: grid-template-columns 0.5s ease-in-out;
         }
 
-            /* TRANSIZIONE MODALITÀ GIOCO: Il campo si restringe */
-            .game-container.game-mode {
-                grid-template-columns: 400px 1fr;
-            }
+        /* TRANSIZIONE MODALITÀ GIOCO: Il campo si restringe */
+        .game-container.game-mode {
+            grid-template-columns: 400px 1fr;
+        }
 
         @media (max-width: 950px) {
-    .game-container, .game-container.game-mode { 
-        grid-template-columns: 1fr !important; 
-    }
-    
-    /* Centra il tabellone del punteggio e i commenti della partita su mobile */
-    .match-scoreboard, .match-commentary, #match-actions {
-        text-align: center !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        margin: 10px auto !important;
-        width: 100% !important;
-    }
-
-    .court-inner-wood {
-        height: auto !important;
-        min-height: 180px;
-        display: grid !important;
-        grid-template-columns: repeat(5, 1fr) !important;
-        gap: 5px !important;
-        padding: 5px !important;
-    }
-    .court-player-slot {
-        width: auto !important;
-        padding: 4px !important;
-    }
-    .court-player-slot .p-club, .court-player-slot .p-stats-mini {
-        display: none !important;
-    }
-    .court-player-slot .p-name {
-        font-size: 0.7rem !important;
-    }
-    .draft-options-row {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-
-}
+            .game-container, .game-container.game-mode { 
+                grid-template-columns: 1fr !important; 
+            }
             
-        
+            /* Centra perfettamente il tabellone dei risultati, testi e commenti live del match */
+            #match-banner-info, #banner-main-text, #live-simulation-ticker {
+                text-align: center !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 5px auto !important;
+                width: 100% !important;
+            }
+            
+            #banner-main-text {
+                font-size: 0.9rem !important;
+                line-height: 1.3 !important;
+            }
 
+            .court-inner-wood {
+                height: auto !important;
+                min-height: 180px;
+                display: grid !important;
+                grid-template-columns: repeat(5, 1fr) !important;
+                gap: 5px !important;
+                padding: 5px !important;
+            }
+            .court-player-slot {
+                width: auto !important;
+                padding: 4px !important;
+            }
+            .court-player-slot .p-club, .court-player-slot .p-stats-mini {
+                display: none !important;
+            }
+            .court-player-slot .p-name {
+                font-size: 0.7rem !important;
+            }
+            .draft-options-row {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+            
         .main-court-area {
             display: flex;
             flex-direction: column;
@@ -104,16 +106,16 @@
             text-align: center;
         }
 
-            .scoreboard-top h1 {
-                margin: 0;
-                font-size: 1.8rem;
-                color: white;
-                letter-spacing: 1px;
-            }
+        .scoreboard-top h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: white;
+            letter-spacing: 1px;
+        }
 
-                .scoreboard-top h1 span {
-                    color: var(--lnp-orange);
-                }
+        .scoreboard-top h1 span {
+            color: var(--lnp-orange);
+        }
 
         .next-match-banner {
             margin-top: 8px;
@@ -187,27 +189,27 @@
             transition: all 0.5s ease-in-out;
         }
 
-            .court-inner-wood::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                bottom: 0;
-                left: 50%;
-                width: 3px;
-                background: white;
-            }
+        .court-inner-wood::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 3px;
+            background: white;
+        }
 
-            .court-inner-wood::after {
-                content: '';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 80px;
-                height: 80px;
-                border: 3px solid white;
-                border-radius: 50%;
-            }
+        .court-inner-wood::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border: 3px solid white;
+            border-radius: 50%;
+        }
 
         .court-player-slot {
             width: 140px;
@@ -221,10 +223,10 @@
             transition: all 0.3s ease;
         }
 
-            .court-player-slot.filled {
-                border-color: var(--lnp-orange);
-                background: var(--bg-card);
-            }
+        .court-player-slot.filled {
+            border-color: var(--lnp-orange);
+            background: var(--bg-card);
+        }
 
         .role-indicator {
             background: var(--lnp-orange);
@@ -305,9 +307,9 @@
             text-align: center;
         }
 
-            .draft-option-card:hover {
-                border-color: var(--lnp-orange);
-            }
+        .draft-option-card:hover {
+            border-color: var(--lnp-orange);
+        }
 
         .sidebar-right {
             display: flex;
@@ -329,13 +331,13 @@
             margin-bottom: 10px;
         }
 
-            .record-text span.w {
-                color: var(--success);
-            }
+        .record-text span.w {
+            color: var(--success);
+        }
 
-            .record-text span.l {
-                color: var(--danger);
-            }
+        .record-text span.l {
+            color: var(--danger);
+        }
 
         button {
             background: var(--lnp-orange);
@@ -351,24 +353,24 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-            button:hover {
-                background: var(--lnp-orange-hover);
-            }
+        button:hover {
+            background: var(--lnp-orange-hover);
+        }
 
-            button:disabled {
-                background: #334155;
-                color: #64748b;
-                cursor: not-allowed;
-                box-shadow: none;
-            }
+        button:disabled {
+            background: #334155;
+            color: #64748b;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
 
-            button.btn-choose {
-                background: var(--lnp-blue);
-                color: white;
-                padding: 5px;
-                font-size: 0.75rem;
-                margin-top: 5px;
-            }
+        button.btn-choose {
+            background: var(--lnp-blue);
+            color: white;
+            padding: 5px;
+            font-size: 0.75rem;
+            margin-top: 5px;
+        }
 
         .calendar-box {
             background: var(--bg-card);
@@ -408,15 +410,15 @@
             gap: 2px;
         }
 
-            .calendar-item.win {
-                border-left: 4px solid var(--success);
-                background: rgba(16,185,129,0.07);
-            }
+        .calendar-item.win {
+            border-left: 4px solid var(--success);
+            background: rgba(16,185,129,0.07);
+        }
 
-            .calendar-item.loss {
-                border-left: 4px solid var(--danger);
-                background: rgba(239,68,68,0.07);
-            }
+        .calendar-item.loss {
+            border-left: 4px solid var(--danger);
+            background: rgba(239,68,68,0.07);
+        }
 
         .cal-row-mvp {
             font-size: 0.7rem;
@@ -506,9 +508,9 @@
         </div>
     </div>
 
-    <script>// --- INSERISCI IL TUO DATABASE SU VSCODE ALL'INTERNO DI QUESTO ARRAY ---
-        const allPlayers = [
-            
+    <script>
+        // --- INSERISCI IL TUO DATABASE SU VSCODE ALL'INTERNO DI QUESTO ARRAY ---
+        const allPlayers = [      
                 {
                     "nome": "Matthew James",
                     "cognome": "Tiby",
