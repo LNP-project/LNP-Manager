@@ -485,6 +485,17 @@
             <div class="action-box">
                 <div class="calendar-title">Pannello Squadra</div>
                 <div class="record-text"><span class="w" id="w-counter">0</span> - <span class="l" id="l-counter">0</span></div>
+                <div id="tactic-selection-wrapper" style="margin-bottom: 15px; text-align: center;">
+    <label for="tactic-select" style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: bold;">
+        SCEGLI LA DISPOSIZIONE IN CAMPO:
+    </label>
+    <select id="tactic-select" style="background: var(--bg-card); color: #fff; border: 1px solid var(--lnp-orange); padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; width: 85%; max-width: 280px;">
+        <option value="3-2">3-2 </option>
+        <option value="4-1">4-1 </option>
+        <option value="run-gun">Run & Gun </option>
+        <option value="defense">Difesa & Contropiede </option>
+    </select>
+</div>
                 <button id="btn-start-draft" onclick="startDraftProcess()" style="margin-bottom:8px;">Avvia Draft</button>
                 <button id="btn-play-game" onclick="simMatch()" disabled>Gioca Partita</button>
             </div>
@@ -3201,7 +3212,7 @@
         ];
 
         const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean);
-        const orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
+        let orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
         let currentDraftStep = 0;
         let userTeam = {};
         let wins = 0;
@@ -3210,19 +3221,53 @@
         let schedule = [];
 
         function startDraftProcess() {
+            const selectElem = document.getElementById('tactic-select');
+            if(selectElem) {
+                selectElem.disabled = true;
+                const tactic = selectElem.value;
+
+                // Cambiamo la struttura dei ruoli in base al modulo scelto!
+                if (tactic === '4-1') {
+                    // 4 Esterni/Ali e 1 solo Centro (niente PF tradizionale)
+                    orderRoles = ['PG', 'SG', 'SF', 'SG', 'C']; 
+                } else if (tactic === 'run-gun') {
+                    // Corri e tira: Small Ball estremo (niente Centro vero, due Ali Grandi o Ali Piccole)
+                    orderRoles = ['PG', 'SG', 'SF', 'SF', 'PF'];
+                } else if (tactic === 'defense') {
+                    // Difesa e Contropiede: Torri gemelle (2 Centri e 1 sola Guardia)
+                    orderRoles = ['PG', 'SF', 'PF', 'C', 'C'];
+                } else {
+                    // Modulo 3-2 (Equilibrato standard)
+                    orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
+                }
+            } else {
+                orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
+            }
+
             document.getElementById('btn-start-draft').disabled = true;
             document.getElementById('draft-panel').style.opacity = "1";
             currentDraftStep = 0;
             userTeam = {};
 
-            orderRoles.forEach(role => {
-                const slot = document.getElementById(`court-${role}`);
-                slot.className = "court-player-slot";
-                slot.innerHTML = `<span class="role-indicator">${role}</span><div class="p-name">?</div><div class="p-club">-</div>`;
-            });
+            // Svuotiamo il campo da basket grafico prima di ridisegnare gli slot corretti
+            const courtContainer = document.getElementById('court-players-container') || document.querySelector('.court-grid');
+            if (courtContainer) {
+                courtContainer.innerHTML = "";
+                // Creiamo dinamicamente i 5 slot sul campo in base ai ruoli della tattica scelta!
+                orderRoles.forEach((role, index) => {
+                    courtContainer.innerHTML += `
+                        <div id="court-slot-${index}" class="court-player-slot">
+                            <span class="role-indicator">${role}</span>
+                            <div class="p-name">?</div>
+                            <div class="p-club">-</div>
+                        </div>
+                    `;
+                });
+            }
 
             renderDraftRound();
         }
+    
 
         function renderDraftRound() {
             if(currentDraftStep >= orderRoles.length) {
@@ -3284,24 +3329,28 @@
 
         function pickPlayer(role, encodedData) {
             const player = JSON.parse(decodeURIComponent(encodedData));
-            userTeam[role] = player;
+            
+            // Salviamo il giocatore usando come chiave l'indice dello step (0, 1, 2, 3, 4) per evitare duplicati di ruolo
+            userTeam[currentDraftStep] = player;
 
-            const slotElement = document.getElementById(`court-${role}`);
-            slotElement.className = "court-player-slot filled";
-            slotElement.innerHTML = `
-                <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span>
-                <div class="p-name" style="color:white;">${player.cognome}</div>
-                <div class="p-club">${player.club}</div>
-                <div class="p-stats-mini">
-                    <span>PTS: ${player.ppg || 0}</span>
-                    <span>AST: ${player.apg || 0}</span>
-                </div>
-            `;
+            // Troviamo lo slot grafico usando l'indice dello step corrente
+            const slotElement = document.getElementById(`court-slot-${currentDraftStep}`);
+            if (slotElement) {
+                slotElement.className = "court-player-slot filled";
+                slotElement.innerHTML = `
+                    <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span>
+                    <div class="p-name" style="color:white;">${player.cognome}</div>
+                    <div class="p-club">${player.club}</div>
+                    <div class="p-stats-mini">
+                        <span>PTS: ${player.ppg || 0}</span>
+                        <span>AST: ${player.apg || 0}</span>
+                    </div>
+                `;
+            }
 
             currentDraftStep++;
             renderDraftRound();
         }
-
         
        // Genera un calendario reale con 19 partite di andata e 19 di ritorno
         function generateSchedule() {
