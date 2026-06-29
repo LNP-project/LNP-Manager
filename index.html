@@ -3239,7 +3239,7 @@
             }
 
             // Trova il container grafico del campo da basket
-            const courtContainer = document.getElementById('court-players-container') || document.querySelector('.court-grid');
+            const courtContainer = document.getElementById('court-grid'); 
             if (courtContainer) {
                 courtContainer.innerHTML = "";
                 // Disegna l'anteprima vuota con i ruoli aggiornati della tattica
@@ -3490,22 +3490,54 @@
             const matchButton = document.getElementById('btn-play-game');
             matchButton.disabled = true;
             const playersArray = Object.values(userTeam);
-            const matchPace = Math.round(70 + Math.random() * 16);
-            const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
+            
+            // Recuperiamo la tattica scelta dall'utente
+            const selectedTactic = document.getElementById('tactic-select') ? document.getElementById('tactic-select').value : '3-2';
 
-            // --- CALCOLO EFFICIENZA UTENTE ---
-            const userShootingLuck = (Math.random() * 16) - 8;
+            // Impostazioni base del match
+            let matchPace = Math.round(70 + Math.random() * 16);
+            let userShootingLuck = (Math.random() * 16) - 8; // base (-8 a +8)
+            let oppShootingLuck = (Math.random() * 16) - 8;
+            let defenseMalus = 0; // Eventuale malus difensivo dell'utente
+
+            // Trova il giocatore con l'OVR più basso nel quintetto dell'utente per valorizzarlo
+            const lowestOvrPlayer = [...playersArray].sort((a, b) => (a.ovr || 75) - (b.ovr || 75))[0];
+            let lowestOvrBoost = 0;
+
+            // --- APPLICAZIONE LOGICA TATTICHE ---
+            if (selectedTactic === '4-1') {
+                // Più offensivo: boost all'attacco, ma la CPU segna di più (pecca in difesa/rimbalzi)
+                userShootingLuck += 5; 
+                defenseMalus = 6; 
+            } else if (selectedTactic === 'run-gun') {
+                // Run & Gun: Ritmo altissimo, punteggi alti e totale imprevedibilità (random)
+                matchPace += 15;
+                userShootingLuck = (Math.random() * 30) - 15; // Molto più instabile (-15 a +15)
+                oppShootingLuck = (Math.random() * 26) - 13;
+            } else if (selectedTactic === 'defense') {
+                // Difesa e Contropiede: Ritmo basso, la CPU fa fatica a segnare.
+                // Qui valorizziamo il giocatore più scarso d'OVR dandogli un senso tattico!
+                matchPace -= 8;
+                oppShootingLuck -= 6; // La CPU fa più fatica a fare canestro
+                lowestOvrBoost = 5;   // Il tuo giocatore più basso di OVR riceve un finto boost di leadership
+            } // Nota: Se è 3-2 non applichiamo modificatori (Equilibrato)
+
+            // Ricalcolo OVR Medio Utente tenendo conto dell'eventuale boost tattico al gregario
+            const myTeamOvrSum = playersArray.reduce((acc, p) => {
+                let currentOvr = p.ovr || 75;
+                if (p.cognome === lowestOvrPlayer.cognome) currentOvr += lowestOvrBoost;
+                return acc + currentOvr;
+            }, 0) / 5;
+
+            // --- CALCOLO EFFICIENZA FINALE CON MODIFICATORI TATTICI ---
             const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
             let finalUserScore = Math.round(matchPace * userEfficiency);
 
-            // --- CALCOLO EFFICIENZA CPU REALISTICA ---
             const oppPlayers = allPlayers.filter(p => p.club === opponentName);
             const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / oppPlayers.length : 74;
 
-            const oppShootingLuck = (Math.random() * 16) - 8; 
             const oppEfficiency = 0.70 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
-            let finalOppScore = Math.round(matchPace * oppEfficiency);
-
+            let finalOppScore = Math.round(matchPace * oppEfficiency) + defenseMalus;
             // Boost per l'utente in caso di clutch time
             if (finalUserScore <= finalOppScore) {
                 if (myTeamOvrSum > oppAvgOvr + 7 && Math.random() > 0.6) {
