@@ -3229,8 +3229,7 @@
                 document.getElementById('draft-title-text').innerText = "Draft Completato!";
                 document.getElementById('draft-options-container').innerHTML = '<div style="color:var(--success); font-weight:bold; padding:15px; text-align:center; grid-column: span 5;">Roster completato! Clicca su "GIOCA PARTITA".</div>';
                 
-                // CORRETTO: Adesso chiama la funzione con il nome esatto
-                generateSchedule(); 
+                generateSchedule(); // Genera e renderizza tutto il tabellone
                 
                 document.getElementById('btn-play-game').disabled = false;
                 updateMatchBanner();
@@ -3248,12 +3247,17 @@
             }
             if(pool.length < 5) pool = allPlayers;
 
-            const currentSelectedCognomi = Object.values(userTeam).map(p => p.cognome);
-            pool = pool.filter(p => !currentSelectedCognomi.includes(p.cognome));
+            // Controllo di sicurezza: evita errori se cognome non è definito
+            const currentSelectedCognomi = Object.values(userTeam).map(p => p ? p.cognome : "");
+            pool = pool.filter(p => p && p.cognome && !currentSelectedCognomi.includes(p.cognome));
 
             let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
             const container = document.getElementById('draft-options-container');
             container.innerHTML = '';
+
+            if (choices.length === 0) {
+                choices = allPlayers.slice(0, 5); // Fallback di emergenza se il pool si svuota
+            }
 
             choices.forEach(player => {
                 const card = document.createElement('div');
@@ -3262,8 +3266,8 @@
 
                 card.innerHTML = `
                     <div>
-                        <div class="p-name" style="color:var(--lnp-orange); font-size:1rem;">${player.cognome}</div>
-                        <div class="p-club" style="font-size:0.65rem; margin-bottom: 8px;">${player.club}</div>
+                        <div class="p-name" style="color:var(--lnp-orange); font-size:1rem;">${player.cognome || 'Giocatore'}</div>
+                        <div class="p-club" style="font-size:0.65rem; margin-bottom: 8px;">${player.club || 'LNP'}</div>
                     </div>
                     <div class="p-stats-mini">
                         <span>P: <strong>${player.ppg || 0}</strong></span>
@@ -3276,6 +3280,7 @@
                 container.appendChild(card);
             });
         }
+    
 
         function pickPlayer(role, encodedData) {
             const player = JSON.parse(decodeURIComponent(encodedData));
@@ -3297,11 +3302,12 @@
             renderDraftRound();
         }
 
-        // Genera un calendario reale con 19 partite di andata e 19 di ritorno
+        
+       // Genera un calendario reale con 19 partite di andata e 19 di ritorno
         function generateSchedule() {
             schedule = [];
             
-            // 1. Creiamo i match di Andata (Giornate 1-19) - CORRETTO: Usa opponentTeams estratto dal DB
+            // 1. Creiamo i match di Andata (Giornate 1-19)
             let round = 1;
             opponentTeams.forEach(opponent => {
                 schedule.push({ round: round, opponent: opponent, simulated: false, result: null, score: "" });
@@ -3314,7 +3320,6 @@
             schedule.forEach((match, index) => match.round = index + 1);
 
             // 2. Creiamo i match di Ritorno (Giornate 20-38) specularmente
-            // CORRETTO: Sistemata la chiusura dell'oggetto e della funzione map
             let returnMatches = schedule.map((match, index) => {
                 return {
                     round: index + 20,
@@ -3327,6 +3332,36 @@
 
             // Uniamo Andata e Ritorno nel calendario definitivo
             schedule = schedule.concat(returnMatches);
+
+            // STAMPA IL CALENDARIO A SCHERMO SULLA DESTRA
+            renderCalendar();
+        }
+
+        // Funzione essenziale per disegnare la lista dei match nell'interfaccia
+        function renderCalendar() {
+            // Cerca il box del calendario (funziona sia con 'calendar-render-box' che con l'ID standard della lista)
+            const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list');
+            if (!container) return; // Evita crash se l'elemento non viene trovato
+            
+            container.innerHTML = "";
+            schedule.forEach(match => {
+                const li = document.createElement("li");
+                li.className = "calendar-item";
+                li.id = `cal-item-${match.round}`; // Genera l'ID dinamico richiesto dal simulatore!
+                
+                if (match.result) {
+                    const isWin = match.result.includes("W") || parseInt(match.score.split("-")[0]) > parseInt(match.score.split("-")[1]);
+                    li.classList.add(isWin ? "win" : "loss");
+                }
+                
+                li.innerHTML = `
+                    <div><strong>Gara ${match.round}:</strong> VS ${match.opponent}</div>
+                    <div id="score-${match.round}" style="font-weight:bold;">${match.score || 'Da giocare'}</div>
+                    <div id="mvp-${match.round}" class="cal-row-mvp" style="font-size:0.7rem; color:var(--lnp-orange);"></div>
+                `;
+                container.appendChild(li);
+            });
+        }
         }
                 
         function updateMatchBanner() {
