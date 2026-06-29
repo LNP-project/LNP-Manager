@@ -489,7 +489,7 @@
     <label for="tactic-select" style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: bold;">
         SCEGLI LA DISPOSIZIONE IN CAMPO:
     </label>
-    <select id="tactic-select" style="background: var(--bg-card); color: #fff; border: 1px solid var(--lnp-orange); padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; width: 85%; max-width: 280px;">
+    <select id="tactic-select" onchange="updateCourtPreview()" style="background: var(--bg-card); color: #fff; border: 1px solid var(--lnp-orange); padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; width: 85%; max-width: 280px;">
         <option value="3-2">3-2 </option>
         <option value="4-1">4-1 </option>
         <option value="run-gun">Run & Gun </option>
@@ -3220,6 +3220,41 @@
         let currentMatchNumber = 1;
         let schedule = [];
 
+        function updateCourtPreview() {
+            const selectElem = document.getElementById('tactic-select');
+            if (!selectElem) return;
+            
+            const tactic = selectElem.value;
+            let previewRoles = [];
+
+            // Determina i ruoli in base al modulo selezionato
+            if (tactic === '4-1') {
+                previewRoles = ['PG', 'SG', 'SF', 'SG', 'C']; 
+            } else if (tactic === 'run-gun') {
+                previewRoles = ['PG', 'SG', 'SF', 'SF', 'PF'];
+            } else if (tactic === 'defense') {
+                previewRoles = ['PG', 'SF', 'PF', 'C', 'C'];
+            } else {
+                previewRoles = ['PG', 'SG', 'SF', 'PF', 'C']; // Standard 3-2
+            }
+
+            // Trova il container grafico del campo da basket
+            const courtContainer = document.getElementById('court-players-container') || document.querySelector('.court-grid');
+            if (courtContainer) {
+                courtContainer.innerHTML = "";
+                // Disegna l'anteprima vuota con i ruoli aggiornati della tattica
+                previewRoles.forEach((role, index) => {
+                    courtContainer.innerHTML += `
+                        <div id="court-slot-${index}" class="court-player-slot">
+                            <span class="role-indicator">${role}</span>
+                            <div class="p-name">?</div>
+                            <div class="p-club">-</div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
         function startDraftProcess() {
             const selectElem = document.getElementById('tactic-select');
             if(selectElem) {
@@ -3250,20 +3285,8 @@
             userTeam = {};
 
             // Svuotiamo il campo da basket grafico prima di ridisegnare gli slot corretti
-            const courtContainer = document.getElementById('court-players-container') || document.querySelector('.court-grid');
-            if (courtContainer) {
-                courtContainer.innerHTML = "";
-                // Creiamo dinamicamente i 5 slot sul campo in base ai ruoli della tattica scelta!
-                orderRoles.forEach((role, index) => {
-                    courtContainer.innerHTML += `
-                        <div id="court-slot-${index}" class="court-player-slot">
-                            <span class="role-indicator">${role}</span>
-                            <div class="p-name">?</div>
-                            <div class="p-club">-</div>
-                        </div>
-                    `;
-                });
-            }
+            updateCourtPreview();
+            
 
             renderDraftRound();
         }
