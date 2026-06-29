@@ -3294,28 +3294,37 @@
             renderDraftRound();
         }
 
-        function generateLnpSchedule() {
-            schedule = [];
-            const listContainer = document.getElementById('calendar-render-box');
-            listContainer.innerHTML = '';
+        // Genera un calendario reale con 19 partite di andata e 19 di ritorno
+function generateSchedule() {
+    schedule = [];
+    
+    // 1. Creiamo i match di Andata (Giornate 1-19)
+    let round = 1;
+    teams.forEach(opponent => {
+        schedule.push({ round: round, opponent: opponent, simulated: false, result: null, score: "" });
+        round++;
+    });
 
-            for(let i = 1; i <= 38; i++) {
-                const randomOpponent = opponentTeams[Math.floor(Math.random() * opponentTeams.length)];
-                schedule.push({ match: i, team: randomOpponent, played: false, result: "", mvp: "" });
+    // Mescoliamo i match di andata per non affrontarli in ordine alfabetico
+    schedule = schedule.sort(() => 0.5 - Math.random());
+    // Riassegniamo il numero di giornata corretto dopo il rimescolamento
+    schedule.forEach((match, index) => match.round = index + 1);
 
-                const li = document.createElement('li');
-                li.className = 'calendar-item';
-                li.id = `cal-item-${i}`;
-                li.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <span><strong>Gara ${i}</strong>: vs ${randomOpponent}</span>
-                        <strong id="score-${i}" style="font-size:0.9rem;">-</strong>
-                    </div>
-                    <div class="cal-row-mvp" id="mvp-${i}"></div>
-                `;
-                listContainer.appendChild(li);
-            }
-        }
+    // 2. Creiamo i match di Ritorno (Giornate 20-38) specularmente
+    let returnMatches = schedule.map((match, index) => {
+        return {
+            round: index + 20,
+            opponent: match.opponent,
+            simulated: false,
+            result: null,
+            score: ""
+        });
+    };
+
+    // Uniamo Andata e Ritorno nel calendario definitivo
+    schedule = schedule.concat(returnMatches);
+}
+        
 
         function updateMatchBanner() {
             if(currentMatchNumber <= 38) {
@@ -3324,11 +3333,45 @@
             }
         }
 
+        // Trova il quintetto ufficiale pescando SOLO i giocatori reali dal tuo database
+function getOpponentLineup(opponentName) {
+    const roles = ["PG", "SG", "SF", "PF", "C"];
+    let lineupStrings = [];
+    
+    // Prendiamo tutti i giocatori reali che appartengono a quella specifica squadra
+    let poolSquadra = allPlayers.filter(p => p.club === opponentName);
+
+    roles.forEach(role => {
+        // 1. Cerca il giocatore perfetto per quel ruolo specifico
+        const index = poolSquadra.findIndex(p => p.role === role);
+        
+        if (index !== -1) {
+            // Trovato! Lo inseriamo nel quintetto e lo togliamo dal pool per non duplicarlo
+            const player = poolSquadra.splice(index, 1)[0];
+            lineupStrings.push(`${role}: ${player.name} (${player.ovr})`);
+        } else if (poolSquadra.length > 0) {
+            // 2. Se manca quel ruolo specifico, adattiamo un altro giocatore vero della stessa squadra
+            const player = poolSquadra.splice(0, 1)[0];
+            lineupStrings.push(`${role} (Adattato): ${player.name} (${player.ovr})`);
+        } else {
+            // 3. Caso limite (se hai inserito meno di 5 giocatori in quel club per errore)
+            lineupStrings.push(`${role}: Non disponibile`);
+        }
+    });
+
+    return lineupStrings.join(" | ");
+}
+
         function simMatch() {
             if (currentMatchNumber > 38 || losses > 0) return;
 
             // ABILITA MODALITÀ GIOCO (Il campo si restringe visivamente)
             document.getElementById('main-game-viewport').classList.add('game-mode');
+
+            document.getElementById("banner-main-text").innerHTML = `
+        <div style="color:var(--lnp-orange); font-weight:bold; font-size:0.85rem; margin-bottom:4px;">STAI AFFRONTANDO IL QUINTETTO DI: ${currentMatch.opponent.toUpperCase()}</div>
+        <div style="font-size:0.8rem; color:#fff; background:rgba(0,0,0,0.3); padding:6px; border-radius:4px; line-height:1.4;">${opponentLineupText}</div>
+    `;
 
             const matchButton = document.getElementById('btn-play-game');
             matchButton.disabled = true;
@@ -3347,12 +3390,13 @@ const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100)
 let finalUserScore = Math.round(matchPace * userEfficiency);
 
 // --- CALCOLO EFFICIENZA CPU (AGGIORNATA) ---
-const oppPlayers = allPlayers.filter(p => p.club === opponentName);
-const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + p.ovr, 0) / oppPlayers.length : 60;
+// --- CALCOLO EFFICIENZA CPU REALISTICA ---
+const oppPlayers = allPlayers.filter(p => p.club === currentMatch.opponent);
+// Calcola la media OVR esatta basandosi sui giocatori reali di quella squadra nel DB
+const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + p.ovr, 0) / oppPlayers.length : 74;
 
-const oppShootingLuck = (Math.random() * 16) - 8; // Variazione tiri CPU (-8 a +8)
-// Alzata l'efficienza base della CPU a 0.71 per renderla solida e competitiva
-const oppEfficiency = 0.71 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
+const oppShootingLuck = (Math.random() * 16) - 8; 
+const oppEfficiency = 0.70 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
 let finalOppScore = Math.round(matchPace * oppEfficiency);
 
 // NOTA: Abbiamo eliminato il blocco "if (finalUserScore <= finalOppScore)" 
