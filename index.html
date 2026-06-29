@@ -453,7 +453,7 @@
     <div class="game-container" id="main-game-viewport">
         <div class="main-court-area">
             <div class="scoreboard-top">
-                <h1>LNP GUESSER <span>38-0</span> CHALLENGE</h1>
+                <h1>LNP <span>38-0</span> CHALLENGE</h1>
                 <div class="next-match-banner" id="match-banner-info">
                     <div id="banner-main-text">Clicca su <strong>AVVIA DRAFT</strong> sulla destra per comporre il quintetto ufficiale!</div>
                     <div class="live-ticker" id="live-simulation-ticker"></div>
@@ -3402,19 +3402,21 @@
 
             const currentMatch = schedule[currentMatchNumber - 1];
             const opponentName = currentMatch.opponent;
-            const opponentLineupText = getOpponentLineup(opponentName);
+            // Pulisce l'OVR (cancella le parentesi con i numeri)
+            let opponentLineupText = getOpponentLineup(opponentName).replace(/\s\(\d+\)/g, '');
 
-            // ABILITA MODALITÀ GIOCO (Il campo si restringe visivamente)
+            // ABILITA MODALITÀ GIOCO
             document.getElementById('main-game-viewport').classList.add('game-mode');
 
+            // Stampa il roster fisso nel banner prima della simulazione
             document.getElementById("banner-main-text").innerHTML = `
                 <div style="color:var(--lnp-orange); font-weight:bold; font-size:0.85rem; margin-bottom:4px;">STAI AFFRONTANDO IL QUINTETTO DI: ${opponentName.toUpperCase()}</div>
-                <div style="font-size:0.8rem; color:#fff; background:rgba(0,0,0,0.3); padding:6px; border-radius:4px; line-height:1.4;">${opponentLineupText}</div>
+                <div id="cpu-roster-display" style="font-size:0.8rem; color:#fff; background:rgba(0,0,0,0.3); padding:6px; border-radius:4px; line-height:1.4; margin-bottom: 8px;">${opponentLineupText}</div>
+                <div id="match-status-text">Palla a due in corso...</div>
             `;
 
             const matchButton = document.getElementById('btn-play-game');
             matchButton.disabled = true;
-
             const playersArray = Object.values(userTeam);
             const matchPace = Math.round(70 + Math.random() * 16);
             const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
@@ -3472,8 +3474,11 @@
                 currentLiveUser = Math.round((finalUserScore / totalSteps) * currentStep);
                 currentLiveOpp = Math.round((finalOppScore / totalSteps) * currentStep);
 
-                const commentaries = ["Giro palla LNP...", "Contropiede rapido!", "Fase difensiva intensa...", "Tripla dall'angolo!", "Rimbalzo lottato in area!"];
+                const commentaries = ["Giro palla...", "Contropiede rapido!", "Fase difensiva intensa...", "Tripla dall'angolo!", "Rimbalzo lottato in area!"];
                 ticker.innerText = `LIVE: ${currentLiveUser} - ${currentLiveOpp} (${commentaries[Math.floor(Math.random() * commentaries.length)]})`;
+                
+                // INSERISCI QUESTA RIGA QUI:
+                if(document.getElementById("match-status-text")) document.getElementById("match-status-text").innerText = `In corso... Q${Math.ceil(currentStep/3)}`;
 
                 if (currentStep >= totalSteps) {
                     clearInterval(interval);
@@ -3494,6 +3499,13 @@
                         calRow.className = `calendar-item ${isWin ? 'win' : 'loss'}`;
                         calRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
+
+                    // Sostituisci il vecchio innerHTML di fine partita con questo:
+                    document.getElementById("banner-main-text").innerHTML = `
+                        <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:2px;">SFIDATO QUINTETTO DI: ${opponentName.toUpperCase()}</div>
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.6); margin-bottom:8px; font-style:italic;">${opponentLineupText}</div>
+                        <div style="font-size:1.15rem; color:#fff;">Risultato: <strong style="color:var(--success);">Tu ${finalUserScore}</strong> - <strong>${finalOppScore} ${opponentName}</strong></div>
+                    `;
 
                     if(isWin) {
                         wins++;
