@@ -3537,6 +3537,45 @@
             // Recuperiamo la tattica scelta dall'utente
             const selectedTactic = document.getElementById('tactic-select') ? document.getElementById('tactic-select').value : '3-2';
 
+            let userMatchForm = (Math.random() * 16) - 8;  
+    let oppMatchForm = (Math.random() * 16) - 8;   
+
+    // Inizializziamo le variabili della fortuna al tiro per la partita attuale
+    let userShootingLuck = userMatchForm;
+    let oppShootingLuck = oppMatchForm;
+            const rosterPlayers = Object.values(userTeam).filter(p => p !== null && p !== undefined);
+
+    if (rosterPlayers.length > 0) {
+        // Troviamo il giocatore con i punti medi (ppg) più bassi nel tuo quintetto
+        let underdog = rosterPlayers.reduce((min, p) => (p.ppg || 0) < (min.ppg || 0) ? p : min, rosterPlayers[0]);
+
+        // C'è una probabilità del 40% che il giocatore più scarso si esalti questa sera!
+        if (Math.random() < 0.40) { 
+            // Calcoliamo i punti e assist EXTRA che guadagna stasera (es. Piccoli può fare fino a +6 punti e +4 assist)
+            let extraPoints = Math.floor(Math.random() * 7);  // da 0 a 6 punti in più
+            let extraAssists = Math.floor(Math.random() * 5); // da 0 a 4 assist in più
+
+            // Salviamo i suoi valori originali per non rovinarli nelle partite successive!
+            const originalPpg = underdog.ppg || 0;
+            const originalApg = underdog.apg || 0;
+
+            // Applichiamo il boost temporaneo per questa simulazione
+            underdog.ppg = originalPpg + extraPoints;
+            underdog.apg = originalApg + extraAssists;
+
+            // [IMPORTANTE] Ricalcoliamo i totali di squadra per questa partita includendo il boost!
+            // Assicurati che queste variabili (totPoints, totAssist) corrispondano a come sommi le stats nel tuo codice
+            totPoints += extraPoints;
+            totAssist += extraAssists;
+
+            // Messaggio nel log o una variabile per il banner finale se vuoi menzionarlo!
+            console.log(`🔥 Serata magica per ${underdog.cognome}! Statistiche pompate: Punti ${underdog.ppg}, Assist ${underdog.apg}`);
+            
+            // OPZIONALE: Se vuoi che il ticker lo dica subito a inizio partita, scommenta la riga sotto:
+            // document.getElementById("match-ticker").innerText = `Occhi puntati su ${underdog.cognome.toUpperCase()}, sembra caldissimo nel riscaldamento!`;
+        }
+    }
+
             // Impostazioni base del match
             let matchPace = Math.round(70 + Math.random() * 16);
             let userShootingLuck = (Math.random() * 16) - 8; // base (-8 a +8)
