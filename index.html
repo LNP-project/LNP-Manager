@@ -3307,7 +3307,7 @@
                 // Cambiamo la struttura dei ruoli in base al modulo scelto!
                 if (tactic === '4-1') {
                     // 4 Esterni/Ali e 1 solo Centro (niente PF tradizionale)
-                    orderRoles = ['PG', 'SG', 'SF', 'SG', 'C']; 
+                    orderRoles = ['PG', 'SG', 'SG', 'SF', 'C']; 
                 } else if (tactic === 'run-gun') {
                     // Corri e tira: Small Ball estremo (niente Centro vero, due Ali Grandi o Ali Piccole)
                     orderRoles = ['PG', 'SG', 'SF', 'SF', 'PF'];
@@ -3352,7 +3352,7 @@
 
             let pool = [];
             if (activeRole === 'SG') {
-                pool = allPlayers.filter(p => p.ruolo1 === 'PG' || p.ruolo1 === 'SF' || p.ruolo2 === 'PG');
+                pool = allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG');
             } else {
                 pool = allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
             }
