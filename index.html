@@ -446,6 +446,49 @@
             max-width: 460px;
             width: 90%;
         }
+
+.game-mode #match-banner-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            width: 92%;
+            max-width: 500px;
+            background: rgba(15, 23, 42, 0.98) !important; /* Sfondo scuro ultra-coprente */
+            border: 2px solid var(--lnp-orange);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Sfondo oscurato dietro il boxscore per dare focus ed eliminare distrazioni */
+        .game-mode::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9998;
+            pointer-events: all; /* Blocca i click sullo sfondo durante il match */
+        }
+
+        /* Ottimizzazione del Ticker all'interno del pop-up fisso */
+        .game-mode #live-simulation-ticker {
+            font-size: 1.15rem;
+            color: #38bdf8;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            border-left: 4px solid var(--lnp-orange);
+        }
+        
     </style>
 </head>
 <body>
@@ -3601,16 +3644,19 @@
                     if(mvpText) mvpText.innerText = `MVP: ${currentMatch.mvp}`;
                     if(calRow) {
                         calRow.className = `calendar-item ${isWin ? 'win' : 'loss'}`;
-                        calRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        
                     }
 
                     // Sostituisci il vecchio innerHTML di fine partita con questo:
                     document.getElementById("banner-main-text").innerHTML = `
-                        <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:2px;">SFIDATO QUINTETTO DI: ${opponentName.toUpperCase()}</div>
-                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.6); margin-bottom:8px; font-style:italic;">${opponentLineupText}</div>
-                        <div style="font-size:1.15rem; color:#fff;">Risultato: <strong style="color:var(--success);">Tu ${finalUserScore}</strong> - <strong>${finalOppScore} ${opponentName}</strong></div>
+                        <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:4px;">RISULTATO FINALE VS ${opponentName.toUpperCase()}</div>
+                        <div style="font-size:1.6rem; color:#fff; margin: 15px 0; font-weight:bold;">
+                            <span style="color:${isWin ? 'var(--success)' : '#ef4444'}">${isWin ? 'VITTORIA 🎉' : 'SCONFITTA ❌'}</span><br>
+                            Tu ${finalUserScore} - ${finalOppScore} ${opponentName}
+                        </div>
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-bottom:15px; font-style:italic; background:rgba(0,0,0,0.2); padding:6px; border-radius:4px;">${completeMvpStats}</div>
+                        <button onclick="closeBoxscore()" style="background:var(--lnp-orange); color:#fff; border:none; padding:8px 20px; border-radius:4px; font-weight:bold; cursor:pointer; width:100%;">AVANZA AL PROSSIMO TURNO</button>
                     `;
-
                     if(isWin) {
                         wins++;
                         document.getElementById('w-counter').innerText = wins;
@@ -3637,6 +3683,22 @@
             document.getElementById('end-title').style.color = isSuccess ? "var(--success)" : "var(--danger)";
             document.getElementById('end-msg').innerText = message;
             overlay.style.display = 'flex';
+        }
+        // ==========================================================================
+        // FUNZIONE PER CHIUDERE IL BOXSCORE CENTRALE E TORNARE AL GIOCO
+        // ==========================================================================
+        function closeBoxscore() {
+            // Rimuove la modalità gioco: sblocca lo schermo e nasconde il pop-up centrale
+            document.getElementById('main-game-viewport').classList.remove('game-mode');
+            
+            // Riabilita il pulsante per giocare la prossima partita (se non hai perso)
+            const matchButton = document.getElementById('btn-play-game');
+            if (matchButton && losses === 0 && currentMatchNumber <= 38) {
+                matchButton.disabled = false;
+            }
+            
+            // Ripristina il banner standard mostrando la nuova partita in calendario
+            updateMatchBanner();
         }
 
         </script>
