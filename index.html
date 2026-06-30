@@ -533,10 +533,10 @@
         SCEGLI LA DISPOSIZIONE IN CAMPO:
     </label>
     <select id="tactic-select" onchange="updateCourtPreview()" style="background: var(--bg-card); color: #fff; border: 1px solid var(--lnp-orange); padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; width: 85%; max-width: 280px;">
-        <option value="3-2">3-2 </option>
-        <option value="4-1">4-1 </option>
+        <option value="3-2">Equilibrato </option>
+        <option value="4-1">Small ball </option>
         <option value="run-gun">Run & Gun </option>
-        <option value="defense">Difesa & Contropiede </option>
+        <option value="defense">Difesa del perimetro </option>
     </select>
 </div>
                 <button id="btn-start-draft" onclick="startDraftProcess()" style="margin-bottom:8px;">Avvia Draft</button>
@@ -2067,7 +2067,7 @@
                     "club": "Unieuro Forlì",
                     "altezza": 194.0,
                     "peso": 95.0,
-                    "ruolo1": "PG",
+                    "ruolo1": "SF",
                     "ruolo2": "SF",
                     "ppg": 9.8,
                     "apg": 1.3,
@@ -3272,7 +3272,7 @@
 
             // Determina i ruoli in base al modulo selezionato
             if (tactic === '4-1') {
-                previewRoles = ['PG', 'SG', 'SF', 'SG', 'C']; 
+                previewRoles = ['PG', 'SG', 'SG', 'SF', 'C']; 
             } else if (tactic === 'run-gun') {
                 previewRoles = ['PG', 'SG', 'SF', 'SF', 'PF'];
             } else if (tactic === 'defense') {
@@ -3551,18 +3551,19 @@
             if (selectedTactic === '4-1') {
                 // Più offensivo: boost all'attacco, ma la CPU segna di più (pecca in difesa/rimbalzi)
                 userShootingLuck += 5; 
-                defenseMalus = 6; 
+                oppShootingLuck += 6; 
             } else if (selectedTactic === 'run-gun') {
                 // Run & Gun: Ritmo altissimo, punteggi alti e totale imprevedibilità (random)
-                matchPace += 15;
-                userShootingLuck = (Math.random() * 30) - 15; // Molto più instabile (-15 a +15)
-                oppShootingLuck = (Math.random() * 26) - 13;
+                matchPace += 10;
+                userShootingLuck = (Math.random() * 24) - 12; // Molto più instabile (-15 a +15)
+                oppShootingLuck = (Math.random() * 24) - 12;
             } else if (selectedTactic === 'defense') {
                 // Difesa e Contropiede: Ritmo basso, la CPU fa fatica a segnare.
                 // Qui valorizziamo il giocatore più scarso d'OVR dandogli un senso tattico!
-                matchPace -= 8;
-                oppShootingLuck -= 6; // La CPU fa più fatica a fare canestro
+                matchPace -= 6;
+                oppShootingLuck -= 4; // La CPU fa più fatica a fare canestro
                 lowestOvrBoost = 5;   // Il tuo giocatore più basso di OVR riceve un finto boost di leadership
+                userShootingLuck = (typeof userShootingLuck !== 'undefined' ? userShootingLuck : 0) - 4;
             } // Nota: Se è 3-2 non applichiamo modificatori (Equilibrato)
 
             // Ricalcolo OVR Medio Utente tenendo conto dell'eventuale boost tattico al gregario
