@@ -3298,6 +3298,8 @@
             }
         }
 
+        window.updateCourtPreview = updateCourtPreview;
+
         function startDraftProcess() {
             const selectElem = document.getElementById('tactic-select');
             if(selectElem) {
@@ -3333,6 +3335,7 @@
 
             renderDraftRound();
         }
+        window.startDraftProcess = startDraftProcess;
     
 
         function renderDraftRound() {
