@@ -3511,8 +3511,7 @@
 
             return lineupStrings.join(" | ");
         }
-
-        function simMatch() {
+function simMatch() {
             if (currentMatchNumber > 38 || losses > 0) return;
 
             const currentMatch = schedule[currentMatchNumber - 1];
@@ -3533,81 +3532,80 @@
             const matchButton = document.getElementById('btn-play-game');
             matchButton.disabled = true;
             const playersArray = Object.values(userTeam);
+
+            // 1. VARIABILE SERATA (Forma del giorno di base)
+            let userMatchForm = (Math.random() * 16) - 8;  
+            let oppMatchForm = (Math.random() * 16) - 8;   
             
+            // Inizializziamo le variabili uniche della fortuna al tiro legandole alla forma del giorno
+            let userShootingLuck = userMatchForm;
+            let oppShootingLuck = oppMatchForm;
+
             // Recuperiamo la tattica scelta dall'utente
             const selectedTactic = document.getElementById('tactic-select') ? document.getElementById('tactic-select').value : '3-2';
 
-            let userMatchForm = (Math.random() * 16) - 8;  
-    let oppMatchForm = (Math.random() * 16) - 8;   
-
-    // Inizializziamo le variabili della fortuna al tiro per la partita attuale
-    
+            // 2. IL MIRACOLO DELLA SERATA (Fattore X sul giocatore più scarso)
             const rosterPlayers = Object.values(userTeam).filter(p => p !== null && p !== undefined);
 
-    if (rosterPlayers.length > 0) {
-        // Troviamo il giocatore con i punti medi (ppg) più bassi nel tuo quintetto
-        let underdog = rosterPlayers.reduce((min, p) => (p.ppg || 0) < (min.ppg || 0) ? p : min, rosterPlayers[0]);
+            if (rosterPlayers.length > 0) {
+                // Troviamo il giocatore con i punti medi (ppg) più bassi nel tuo quintetto
+                let underdog = rosterPlayers.reduce((min, p) => (p.ppg || 0) < (min.ppg || 0) ? p : min, rosterPlayers[0]);
 
-        // C'è una probabilità del 40% che il giocatore più scarso si esalti questa sera!
-        if (Math.random() < 0.40) { 
-            // Calcoliamo i punti e assist EXTRA che guadagna stasera (es. Piccoli può fare fino a +6 punti e +4 assist)
-            let extraPoints = Math.floor(Math.random() * 7);  // da 0 a 6 punti in più
-            let extraAssists = Math.floor(Math.random() * 5); // da 0 a 4 assist in più
+                // C'è una probabilità del 40% che il giocatore più scarso si esalti questa sera!
+                if (Math.random() < 0.40) { 
+                    // Calcoliamo i punti e assist EXTRA che guadagna stasera (es. Piccoli fino a +6 punti e +4 assist)
+                    let extraPoints = Math.floor(Math.random() * 7);  // da 0 a 6 punti in più
+                    let extraAssists = Math.floor(Math.random() * 5); // da 0 a 4 assist in più
 
-            // Salviamo i suoi valori originali per non rovinarli nelle partite successive!
-            const originalPpg = underdog.ppg || 0;
-            const originalApg = underdog.apg || 0;
+                    // Salviamo i suoi valori originali per non rovinarli nelle partite successive!
+                    const originalPpg = underdog.ppg || 0;
+                    const originalApg = underdog.apg || 0;
 
-            // Applichiamo il boost temporaneo per questa simulazione
-            underdog.ppg = originalPpg + extraPoints;
-            underdog.apg = originalApg + extraAssists;
+                    // Applichiamo il boost temporaneo per questa simulazione
+                    underdog.ppg = originalPpg + extraPoints;
+                    underdog.apg = originalApg + extraAssists;
 
-            // [IMPORTANTE] Ricalcoliamo i totali di squadra per questa partita includendo il boost!
-            // Assicurati che queste variabili (totPoints, totAssist) corrispondano a come sommi le stats nel tuo codice
-            totPoints += extraPoints;
-            totAssist += extraAssists;
+                    // Ricalcoliamo i totali di squadra per questa partita includendo il boost!
+                    if (typeof totPoints !== 'undefined') totPoints += extraPoints;
+                    if (typeof totAssist !== 'undefined') totAssist += extraAssists;
 
-            // Messaggio nel log o una variabile per il banner finale se vuoi menzionarlo!
-            console.log(`🔥 Serata magica per ${underdog.cognome}! Statistiche pompate: Punti ${underdog.ppg}, Assist ${underdog.apg}`);
-            
-            // OPZIONALE: Se vuoi che il ticker lo dica subito a inizio partita, scommenta la riga sotto:
-            // document.getElementById("match-ticker").innerText = `Occhi puntati su ${underdog.cognome.toUpperCase()}, sembra caldissimo nel riscaldamento!`;
-        }
-    }
+                    // Un piccolo aiuto extra alla squadra se la riserva è in serata di grazia!
+                    userShootingLuck += 3;
 
-            // Impostazioni base del match
+                    console.log(`🔥 Serata magica per ${underdog.cognome}! Statistiche pompate: Punti ${underdog.ppg}, Assist ${underdog.apg}`);
+                }
+            }
+
+            // Impostazioni base del ritmo del match
             let matchPace = Math.round(70 + Math.random() * 16);
-            let userShootingLuck = (Math.random() * 16) - 8; // base (-8 a +8)
-            let oppShootingLuck = (Math.random() * 16) - 8;
             let defenseMalus = 0; // Eventuale malus difensivo dell'utente
 
             // Trova il giocatore con l'OVR più basso nel quintetto dell'utente per valorizzarlo
             const lowestOvrPlayer = [...playersArray].sort((a, b) => (a.ovr || 75) - (b.ovr || 75))[0];
             let lowestOvrBoost = 0;
 
-            // --- APPLICAZIONE LOGICA TATTICHE ---
+            // --- APPLICAZIONE LOGICA TATTICHE (Senza ridichiarare con "let") ---
             if (selectedTactic === '4-1') {
                 // Più offensivo: boost all'attacco, ma la CPU segna di più (pecca in difesa/rimbalzi)
-                userShootingLuck += 5; 
-                oppShootingLuck += 6; 
+                userShootingLuck += 8; 
+                oppShootingLuck += 10; 
             } else if (selectedTactic === 'run-gun') {
-                // Run & Gun: Ritmo altissimo, punteggi alti e totale imprevedibilità (random)
+                // Run & Gun: Ritmo altissimo, punteggi alti e totale imprevedibilità (random equo)
                 matchPace += 10;
-                userShootingLuck = (Math.random() * 24) - 12; // Molto più instabile (-15 a +15)
+                userShootingLuck = (Math.random() * 24) - 12; 
                 oppShootingLuck = (Math.random() * 24) - 12;
             } else if (selectedTactic === 'defense') {
-                // Difesa e Contropiede: Ritmo basso, la CPU fa fatica a segnare.
-                // Qui valorizziamo il giocatore più scarso d'OVR dandogli un senso tattico!
+                // Difesa e Contropiede: Ritmo controllato, malus a entrambi gli attacchi
                 matchPace -= 6;
-                oppShootingLuck -= 4; // La CPU fa più fatica a fare canestro
-                lowestOvrBoost = 5;   // Il tuo giocatore più basso di OVR riceve un finto boost di leadership
-                userShootingLuck = (typeof userShootingLuck !== 'undefined' ? userShootingLuck : 0) - 4;
-            } // Nota: Se è 3-2 non applichiamo modificatori (Equilibrato)
+                oppShootingLuck -= 8; 
+                userShootingLuck -= 8;
+                lowestOvrBoost = 5; // Il tuo giocatore più basso di OVR riceve un finto boost di leadership
+            }
 
             // Ricalcolo OVR Medio Utente tenendo conto dell'eventuale boost tattico al gregario
             const myTeamOvrSum = playersArray.reduce((acc, p) => {
                 let currentOvr = p.ovr || 75;
-                if (p.cognome === lowestOvrPlayer.cognome) currentOvr += lowestOvrBoost;
+                if (lowestOvrPlayer && p.cognome === lowestOvrPlayer.cognome) currentOvr += lowestOvrBoost;
                 return acc + currentOvr;
             }, 0) / 5;
 
@@ -3620,6 +3618,7 @@
 
             const oppEfficiency = 0.70 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
             let finalOppScore = Math.round(matchPace * oppEfficiency) + defenseMalus;
+
             // Boost per l'utente in caso di clutch time
             if (finalUserScore <= finalOppScore) {
                 if (myTeamOvrSum > oppAvgOvr + 7 && Math.random() > 0.6) {
@@ -3663,10 +3662,9 @@
                 const commentaries = ["Giro palla...", "Contropiede rapido!", "Fase difensiva intensa...", "Tripla dall'angolo!", "Rimbalzo lottato in area!"];
                 ticker.innerText = `LIVE: ${currentLiveUser} - ${currentLiveOpp} (${commentaries[Math.floor(Math.random() * commentaries.length)]})`;
                 
-                // INSERISCI QUESTA RIGA QUI:
                 if(document.getElementById("match-status-text")) document.getElementById("match-status-text").innerText = `In corso... Q${Math.ceil(currentStep/3)}`;
 
-               if (currentStep >= totalSteps) {
+                if (currentStep >= totalSteps) {
                     clearInterval(interval);
                     
                     const isWin = finalUserScore > finalOppScore;
@@ -3690,7 +3688,6 @@
                         currentMatchNumber++;
                         
                         if(wins === 38) {
-                            // 1. VITTORIA DEL CAMPIONATO (38-0)
                             ticker.innerText = `FINALE: ${finalUserScore} - ${finalOppScore}`;
                             document.getElementById("banner-main-text").innerHTML = `
                                 <div style="color:var(--lnp-orange); font-size:0.9rem; font-weight:bold;">CAMPIONATO COMPLETATO!</div>
@@ -3700,7 +3697,6 @@
                             return;
                         }
 
-                        // 2. VITTORIA DI SINGOLO TURNO (Il pulsante Avanza che ora FUNZIONA)
                         ticker.innerText = `FINALE: ${finalUserScore} - ${finalOppScore}`;
                         document.getElementById("banner-main-text").innerHTML = `
                             <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:4px;">RISULTATO FINALE VS ${opponentName.toUpperCase()}</div>
@@ -3713,7 +3709,6 @@
                         losses++;
                         document.getElementById('l-counter').innerText = losses;
                         
-                        // 3. SCONFITTA (Pulsante Riavvia direttamente nel banner attivo)
                         ticker.innerText = `FINALE: ${finalUserScore} - ${finalOppScore}`;
                         document.getElementById("banner-main-text").innerHTML = `
                             <div style="color:var(--danger); font-size:0.9rem; font-weight:bold;">CHALLENGE FALLITA ❌</div>
@@ -3727,32 +3722,4 @@
                 }
             }, 140);
         }
-        
-
-        function endGameTrigger(isSuccess, message) {
-            const overlay = document.getElementById('end-screen');
-            document.getElementById('end-title').innerText = isSuccess ? "🏆 RECORD PERFETTO 38-0! 🏆" : "❌ CHALLENGE FALLITA";
-            document.getElementById('end-title').style.color = isSuccess ? "var(--success)" : "var(--danger)";
-            document.getElementById('end-msg').innerText = message;
-            overlay.style.display = 'flex';
-        }
-        // ==========================================================================
-        // FUNZIONE PER CHIUDERE IL BOXSCORE CENTRALE E TORNARE AL GIOCO
-        // ==========================================================================
-        function closeBoxscore() {
-            // Rimuove la modalità gioco: sblocca lo schermo e nasconde il pop-up centrale
-            document.getElementById('main-game-viewport').classList.remove('game-mode');
-            
-            // Riabilita il pulsante per giocare la prossima partita (se non hai perso)
-            const matchButton = document.getElementById('btn-play-game');
-            if (matchButton && losses === 0 && currentMatchNumber <= 38) {
-                matchButton.disabled = false;
-            }
-            
-            // Ripristina il banner standard mostrando la nuova partita in calendario
-            updateMatchBanner();
-        }
-
-        </script>
-</body>
-</html>
+       
