@@ -3627,7 +3627,7 @@
                 // INSERISCI QUESTA RIGA QUI:
                 if(document.getElementById("match-status-text")) document.getElementById("match-status-text").innerText = `In corso... Q${Math.ceil(currentStep/3)}`;
 
-                if (currentStep >= totalSteps) {
+               if (currentStep >= totalSteps) {
                     clearInterval(interval);
                     ticker.innerText = `FINALE: ${finalUserScore} - ${finalOppScore}`;
 
@@ -3644,34 +3644,35 @@
                     if(mvpText) mvpText.innerText = `MVP: ${currentMatch.mvp}`;
                     if(calRow) {
                         calRow.className = `calendar-item ${isWin ? 'win' : 'loss'}`;
-                        
                     }
 
-                    // Sostituisci il vecchio innerHTML di fine partita con questo:
-                    document.getElementById("banner-main-text").innerHTML = `
-                        <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:4px;">RISULTATO FINALE VS ${opponentName.toUpperCase()}</div>
-                        <div style="font-size:1.6rem; color:#fff; margin: 15px 0; font-weight:bold;">
-                            <span style="color:${isWin ? 'var(--success)' : '#ef4444'}">${isWin ? 'VITTORIA 🎉' : 'SCONFITTA ❌'}</span><br>
-                            Tu ${finalUserScore} - ${finalOppScore} ${opponentName}
-                        </div>
-                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-bottom:15px; font-style:italic; background:rgba(0,0,0,0.2); padding:6px; border-radius:4px;">${completeMvpStats}</div>
-                        <button onclick="closeBoxscore()" style="background:var(--lnp-orange); color:#fff; border:none; padding:8px 20px; border-radius:4px; font-weight:bold; cursor:pointer; width:100%;">AVANZA AL PROSSIMO TURNO</button>
-                    `;
+                    // GESTIONE DEI CONTATORI E FINE GIOCO (CON RETURN PER BLOCCARE I POP-UP)
                     if(isWin) {
                         wins++;
                         document.getElementById('w-counter').innerText = wins;
                         currentMatchNumber++;
                         if(wins === 38) {
                             endGameTrigger(true, `STORIA DELL'LNP! 38-0 perfetto! Il tuo quintetto entra di diritto nella leggenda del basket italiano.`);
-                        } else {
-                            updateMatchBanner();
-                            matchButton.disabled = false;
+                            return; // Si ferma qui se hai vinto tutto il campionato
                         }
                     } else {
                         losses++;
                         document.getElementById('l-counter').innerText = losses;
                         endGameTrigger(false, `Il cammino perfetto si interrompe a Gara ${currentMatchNumber}. ${opponentName} espugna il tuo parquet vincendo ${finalOppScore}-${finalUserScore}. Record: ${wins}-1.`);
+                        return; // Si ferma qui se hai perso la challenge
                     }
+
+                    // SE SEI QUI, HAI VINTO LA PARTITA E IL CAMPIONATO CONTINUA:
+                    // Stampiamo in modo permanente il pop-up centrale con il tasto per uscire
+                    document.getElementById("banner-main-text").innerHTML = `
+                        <div style="color:var(--text-muted); font-size:0.85rem; margin-bottom:4px;">RISULTATO FINALE VS ${opponentName.toUpperCase()}</div>
+                        <div style="font-size:1.6rem; color:#fff; margin: 15px 0; font-weight:bold;">
+                            <span style="color:var(--success);">VITTORIA 🎉</span><br>
+                            Tu ${finalUserScore} - ${finalOppScore} ${opponentName}
+                        </div>
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-bottom:15px; font-style:italic; background:rgba(0,0,0,0.2); padding:6px; border-radius:4px;">${completeMvpStats}</div>
+                        <button onclick="closeBoxscore()" style="background:var(--lnp-orange); color:#fff; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; text-transform:uppercase;">AVANZA AL PROSSIMO TURNO ➔</button>
+                    `;
                 }
             }, 90);
         }
