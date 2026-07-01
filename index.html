@@ -3255,10 +3255,9 @@
             
         ];
 // --- VARIABILI DI STATO GLOBALI ---
- // --- VARIABILI DI STATO GLOBALI ---
-               // --- VARIABILI DI STATO GLOBALI ---
-
-         // --- VARIABILI DI STATO GLOBALI ---
+// ==========================================
+// 1. VARIABILI DI STATO GLOBALI
+// ==========================================
 const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
 const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
 
@@ -3278,7 +3277,9 @@ let playersToCut = [];
 let playoffBracket = {};
 let currentPlayoffRound = ""; 
 
-// --- INIZIALIZZAZIONE DATI ---
+// ==========================================
+// 2. INIZIALIZZAZIONE DATI & CALENDARIO
+// ==========================================
 function initChampionshipData() {
     standings = {};
     totalTeams.forEach(team => {
@@ -3300,7 +3301,6 @@ function initChampionshipData() {
     });
 }
 
-// --- GENERATORE CALENDARIO ---
 function generatePerfectSchedule() {
     initChampionshipData();
     fullLeagueSchedule = [];
@@ -3334,237 +3334,9 @@ function generatePerfectSchedule() {
     renderCalendarAndStandings();
 }
 
-// --- RENDERING INTEGRATO CALENDARIO (COLORE RIPRISTINATO CORRETTAMENTE) ---
-function renderCalendarAndStandings() {
-    const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
-    if (!container) return;
-
-    let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
-    let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
-
-    let html = "";
-
-    html += `<div style="background: rgba(255,255,255,0.08) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.15);">
-        <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
-        <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
-    
-    sortedTeams.forEach((team, idx) => {
-        let isMe = team.teamName === "La Tua Squadra";
-        let color = isMe ? "#ff9800" : "#ffffff";
-        html += `<div style="display:flex; justify-content:space-between; padding: 3px 0; color: ${color} !important; font-weight: ${isMe ? 'bold':'normal'} !important;">
-            <span>${idx+1}. ${team.teamName}</span>
-            <span>${team.points} pt (${team.wins}-${team.losses})</span>
-        </div>`;
-    });
-    html += `</div></div>`;
-
-    html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
-    html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
-    
-    fullLeagueSchedule.forEach(giornata => {
-        const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
-        const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
-        let resText = myMatch.score || 'Da giocare';
-        
-        let statusColor = "#cccccc";
-        if (myMatch.score) {
-            let scores = myMatch.score.split(" - ");
-            let homeScore = parseInt(scores[0]);
-            let awayScore = parseInt(scores[1]);
-            
-            // CORREZIONE COLORE LOGICO: Se vinco è sempre Verde, se perdo è sempre Rosso
-            if (myMatch.home === "La Tua Squadra") {
-                statusColor = homeScore > awayScore ? "#28a745" : "#dc3545";
-            } else {
-                statusColor = awayScore > homeScore ? "#28a745" : "#dc3545";
-            }
-        }
-
-        html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
-            <div><strong>Gara ${giornata.round}:</strong> VS ${vsTeam}</div>
-            <div style="font-weight: bold !important; color: ${statusColor} !important;">${resText}</div>
-        </div>`;
-    });
-    html += `</div>`;
-
-    container.innerHTML = html;
-}
-
-// --- SIMULAZIONE CPU ---
-function simulateCPUMatches(currentRound) {
-    const roundData = fullLeagueSchedule[currentRound - 1];
-    if (!roundData) return;
-    
-    roundData.matches.forEach(match => {
-        if (match.home === "La Tua Squadra" || match.away === "La Tua Squadra") return; 
-
-        let homePlayers = allPlayers.filter(p => p.club === match.home);
-        let homeOvr = homePlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (homePlayers.length || 1);
-        
-        let awayPlayers = allPlayers.filter(p => p.club === match.away);
-        let awayOvr = awayPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (awayPlayers.length || 1);
-
-        let homeEff = 0.70 + ((homeOvr + 3) * 0.0035) + ((Math.random() * 14 - 7) / 100);
-        let awayEff = 0.70 + (awayOvr * 0.0035) + ((Math.random() * 14 - 7) / 100);
-
-        let pace = Math.round(72 + Math.random() * 12);
-        let scoreHome = Math.round(pace * homeEff);
-        let scoreAway = Math.round(pace * awayEff);
-
-        if (scoreHome === scoreAway) scoreHome += Math.random() > 0.5 ? 2 : -2;
-
-        match.score = `${scoreHome} - ${scoreAway}`;
-        match.simulated = true;
-
-        if (scoreHome > scoreAway) {
-            standings[match.home].wins++; standings[match.home].points += 2;
-            standings[match.away].losses++;
-        } else {
-            standings[match.away].wins++; standings[match.away].points += 2;
-            standings[match.home].losses++;
-        }
-    });
-}
-
-// --- MERCATO DI RIPARAZIONE (BLOCCO SG REVISIONATO E TRATTAMENTO ANTI-OPACITÀ) ---
-window.startMidSeasonMarket = function() {
-    document.getElementById('main-game-viewport').classList.remove('game-mode');
-    
-    const container = document.getElementById('draft-options-container');
-    document.getElementById('draft-panel').style.opacity = "1";
-    document.getElementById('draft-panel').style.pointerEvents = "auto";
-    document.getElementById('draft-title-text').innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:1.3rem;">🔄 MERCATO DI RIPARAZIONE</span><br><span style="color:#fff; font-size:0.85rem;">Seleziona massimo 2 giocatori da sostituire</span>`;
-    
-    container.innerHTML = "";
-    playersToCut = [];
-
-    Object.keys(userTeam).forEach(slotIndex => {
-        const player = userTeam[slotIndex];
-        const card = document.createElement('div');
-        card.className = 'draft-option-card';
-        card.id = `cut-card-${slotIndex}`;
-        // Rimozione forzata di filtri visivi e opacità del CSS nativo
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important; display:block !important;";
-        card.innerHTML = `
-            <div style="color:#111111 !important; margin-bottom:10px;">
-                <div style="font-weight:bold !important; font-size:1.1rem !important; color:#1a365d !important;">${player.cognome}</div>
-                <div style="font-size:0.8rem !important; color:#4a5568 !important;">${orderRoles[slotIndex]} (${player.club})</div>
-            </div>
-            <button style="background:#e53e3e !important; color:white !important; border:none !important; padding:8px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important;" onclick="toggleCutPlayer(${slotIndex})">Taglia</button>
-        `;
-        container.appendChild(card);
-    });
-
-    let confirmBtn = document.createElement('button');
-    confirmBtn.innerText = "CONFERMA I TAGLI E APRI IL DRAFT";
-    confirmBtn.style.cssText = "grid-column: span 5; padding:12px; background:#38a169; color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer; margin-top:15px; font-size:1rem;";
-    confirmBtn.onclick = processCutsAndRedraft;
-    container.appendChild(confirmBtn);
-}
-
-window.toggleCutPlayer = function(slotIndex) {
-    const idx = playersToCut.indexOf(slotIndex);
-    const card = document.getElementById(`cut-card-${slotIndex}`);
-    if (idx > -1) {
-        playersToCut.splice(idx, 1);
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important;";
-    } else {
-        if (playersToCut.length >= 2) {
-            alert("Puoi tagliare al massimo 2 giocatori!");
-            return;
-        }
-        playersToCut.push(slotIndex);
-        card.style.cssText = "background:#fed7d7 !important; opacity:1 !important; filter:none !important; border:2px solid #e53e3e !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important;";
-    }
-}
-
-function processCutsAndRedraft() {
-    if (playersToCut.length === 0) {
-        alert("Nessun cambio effettuato!");
-        document.getElementById('draft-panel').style.opacity = "0";
-        document.getElementById('draft-panel').style.pointerEvents = "none";
-        closeBoxscore();
-        return;
-    }
-    executeNextSubDraft();
-}
-
-function executeNextSubDraft() {
-    if (playersToCut.length === 0) {
-        document.getElementById('draft-title-text').innerText = "Mercato Completato!";
-        document.getElementById('draft-options-container').innerHTML = '<div style="color:#38a169; font-weight:bold; padding:20px; text-align:center; grid-column: span 5; font-size:1.2rem;">Roster aggiornato!</div>';
-        
-        setTimeout(() => {
-            document.getElementById('draft-panel').style.opacity = "0";
-            document.getElementById('draft-panel').style.pointerEvents = "none";
-            closeBoxscore();
-        }, 1200);
-        return;
-    }
-
-    const activeSlot = playersToCut[0];
-    const roleNeeded = orderRoles[activeSlot];
-
-    document.getElementById('draft-title-text').innerHTML = `Sostituzione: Scegli il nuovo <span style="color:#ff9800; font-weight:bold;">${roleNeeded}</span>`;
-
-    // RISOLTO IL CRASH DELLA SG: Applichiamo la stessa eccezione logica del draft iniziale anche qui
-    let pool = [];
-    if (roleNeeded === 'SG') {
-        pool = allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG');
-    } else {
-        pool = allPlayers.filter(p => p.ruolo1 === roleNeeded || p.ruolo2 === roleNeeded);
-    }
-    
-    let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
-    const container = document.getElementById('draft-options-container');
-    container.innerHTML = '';
-
-    choices.forEach(player => {
-        const card = document.createElement('div');
-        card.className = 'draft-option-card';
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.25) !important; color:#111111 !important; margin:5px !important; display:block !important;";
-        const safeString = encodeURIComponent(JSON.stringify(player));
-        
-        card.innerHTML = `
-            <div style="color:#111111 !important; margin-bottom:8px;">
-                <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
-                <div style="font-size:0.75rem; color:#4a5568 !important;">${player.club}</div>
-            </div>
-            <table style="width:100% !important; margin-bottom:10px !important; border-collapse:collapse !important; background:#f7fafc !important; border-radius:4px !important; font-size:0.8rem !important; color:#2d3748 !important; font-weight:bold !important;">
-                <tr>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">PTS: ${player.ppg || 0}</td>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">AST: ${player.apg || 0}</td>
-                </tr>
-                <tr>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">REB: ${player.rpg || 0}</td>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">STL: ${player.spg || 0}</td>
-                </tr>
-            </table>
-            <button style="background:#ff9800 !important; color:white !important; border:none !important; padding:8px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important;" onclick="insertNewPlayer(${activeSlot}, '${safeString}')">Ingaggia</button>
-        `;
-        container.appendChild(card);
-    });
-}
-
-window.insertNewPlayer = function(slotIndex, encodedData) {
-    const player = JSON.parse(decodeURIComponent(encodedData));
-    userTeam[slotIndex] = player;
-
-    const slotElement = document.getElementById(`court-slot-${slotIndex}`);
-    if (slotElement) {
-        slotElement.innerHTML = `
-            <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${orderRoles[slotIndex]}</span>
-            <div class="p-name" style="color:white; font-weight:bold;">${player.cognome}</div>
-            <div class="p-club" style="font-size:0.7rem; color:#eee;">${player.club}</div>
-            <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
-        `;
-    }
-
-    playersToCut.shift(); 
-    executeNextSubDraft();
-}
-
-// --- LOGICA DRAFT INIZIALE ---
+// ==========================================
+// 3. INTERFACCIA DRAFT INIZIALE (ANTI-GRIGIO)
+// ==========================================
 function updateCourtPreview() {
     const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
     if (!selectElem) return;
@@ -3632,24 +3404,25 @@ function renderDraftRound() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:12px !important; text-align:center !important; box-shadow:0 6px 12px rgba(0,0,0,0.2) !important; color:#111111 !important; margin: 5px !important; display:block !important;";
+        card.style.cssText = "background:#0f2439 !important; opacity:1 !important; filter:none !important; border:2px solid #1e3d59 !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.4) !important; color:#ffffff !important; margin: 5px !important; display:block !important;";
         const safeString = encodeURIComponent(JSON.stringify(player));
+        
         card.innerHTML = `
-            <div style="color:#111111 !important;">
-                <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
-                <div style="font-size:0.75rem; color:#4a5568 !important; margin-bottom:6px;">${player.club}</div>
+            <div style="color:#ffffff !important; margin-bottom:8px; opacity:1 !important;">
+                <div style="color:#ff9800 !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
+                <div style="font-size:0.75rem; color:#cbd5e0 !important;">${player.club}</div>
             </div>
-            <table style="width:100% !important; margin-bottom:10px !important; border-collapse:collapse !important; background:#f7fafc !important; border-radius:4px !important; font-size:0.8rem !important; color:#2d3748 !important; font-weight:bold !important;">
+            <table style="width:100% !important; margin-bottom:12px !important; border-collapse:collapse !important; background:rgba(255,255,255,0.05) !important; border-radius:4px !important; font-size:0.8rem !important; color:#ffffff !important;">
                 <tr>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">PTS: ${player.ppg || 0}</td>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">AST: ${player.apg || 0}</td>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">PTS: <span style="color:#ffc107;">${player.ppg || 0}</span></td>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">AST: <span style="color:#ffc107;">${player.apg || 0}</span></td>
                 </tr>
                 <tr>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">REB: ${player.rpg || 0}</td>
-                    <td style="padding:4px; text-align:center; border:1px solid #e2e8f0;">STL: ${player.spg || 0}</td>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">REB: <span style="color:#ffc107;">${player.rpg || 0}</span></td>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">STL: <span style="color:#ffc107;">${player.spg || 0}</span></td>
                 </tr>
             </table>
-            <button style="background:#ff9800 !important; color:white !important; border:none !important; padding:6px 12px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important;" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
+            <button style="background:#ff9800 !important; color:white !important; border:none !important; padding:8px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important; text-transform:uppercase;" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
         `;
         container.appendChild(card);
     });
@@ -3672,97 +3445,116 @@ function pickPlayer(role, encodedData) {
     renderDraftRound();
 }
 
-function updateMatchBanner() {
-    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
-    if(!banner) return;
-
-    if(currentMatchNumber <= 38) {
-        const giornataData = fullLeagueSchedule[currentMatchNumber - 1];
-        const myMatch = giornataData.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
-        const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
-        banner.innerHTML = `PROSSIMO TURNO LNP: <strong style="color:#ff9800;">${vsTeam}</strong> | <span style="opacity:0.7;">GARA ${currentMatchNumber}/38</span>`;
-    } else {
-        banner.innerHTML = `🏀 FASE FINALE POST-SEASON: <strong style="color:#ff9800;">${currentPlayoffRound.toUpperCase()}</strong>`;
-    }
-}
-
-function closeBoxscore() {
-    document.getElementById('main-game-viewport').classList.remove('game-mode');
-    const ticker = document.getElementById('live-simulation-ticker');
-    if(ticker) ticker.innerText = "";
-    
-    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
-    if(pBtn) pBtn.disabled = false;
-    
-    if(currentMatchNumber <= 38) {
-        renderCalendarAndStandings();
-    } else {
-        renderPlayoffView();
-    }
-    updateMatchBanner();
-}
-window.closeBoxscore = closeBoxscore;
-
-// --- MOTORE DI ACCOPPIAMENTO PLAYOFF RIGIDO ---
-function buildPlayoffBrackets() {
-    let sorted = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
-    
-    let secondo = sorted[1].teamName;
-    let terzo = sorted[2].teamName;
-    let quarto = sorted[3].teamName;
-    let quinto = sorted[4].teamName;
-    let settimo = sorted[6].teamName;
-
-    // Estrazione dei due vincitori dei play-in (simulati su base classifica)
-    let winPlayInA = sorted[7].teamName; 
-    let winPlayInB = sorted[8].teamName; 
-
-    currentPlayoffRound = "Quarti di Finale";
-
-    // CARICAMENTO SCHEMA RICHIESTO: 
-    // - Seconda affronta la vincente dei playin A
-    // - Terza affronta l'altra vincente B
-    // - Quarta affronta la settima
-    // - Quarta contro la quinta (Sottogruppo)
-    playoffBracket = {
-        round: "Quarti",
-        series: [
-            { id: 1, team1: sorted[0].teamName, team2: sorted[5].teamName, wins1: 0, wins2: 0, status: "In Corso" },
-            { id: 2, team1: secondo, team2: winPlayInA, wins1: 0, wins2: 0, status: "In Corso" },
-            { id: 3, team1: terzo, team2: winPlayInB, wins1: 0, wins2: 0, status: "In Corso" },
-            { id: 4, team1: quarto, team2: settimo, wins1: 0, wins2: 0, status: "In Corso" },
-            { id: 5, team1: quarto, team2: quinto, wins1: 0, wins2: 0, status: "In Corso" }
-        ]
-    };
-
-    renderPlayoffView();
-}
-
-function renderPlayoffView() {
+// ==========================================
+// 4. CALENDARIO & DIARIO (FIX COLORI ROSSO/VERDE)
+// ==========================================
+function renderCalendarAndStandings() {
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
     if (!container) return;
 
-    let html = `<div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; border:1px solid #ff9800;">`;
-    html += `<h3 style="color:#ff9800; margin:0 0 10px 0; font-size:0.9rem; text-align:center;">🏀 TABELLONE ACCOPPIAMENTI PLAYOFF</h3>`;
+    let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
+    let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
+
+    let html = "";
+
+    html += `<div style="background: rgba(255,255,255,0.05) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
+        <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
     
-    playoffBracket.series.forEach(s => {
-        let isUserInvolved = (s.team1 === "La Tua Squadra" || s.team2 === "La Tua Squadra");
-        let borderStyle = isUserInvolved ? "border:1px solid #ff9800; background:rgba(255,152,0,0.1);" : "border:1px solid rgba(255,255,255,0.1);";
-        
-        html += `<div style="padding:6px; margin-bottom:6px; border-radius:4px; font-size:0.75rem; ${borderStyle}">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#fff;">
-                <span>${s.team1} (${s.wins1})</span>
-                <span style="color:#ff9800;">VS</span>
-                <span>(${s.wins2}) ${s.team2}</span>
-            </div>
+    sortedTeams.forEach((team, idx) => {
+        let isMe = team.teamName === "La Tua Squadra";
+        let color = isMe ? "#ff9800" : "#ffffff";
+        html += `<div style="display:flex; justify-content:space-between; padding: 3px 0; color: ${color} !important; font-weight: ${isMe ? 'bold':'normal'} !important;">
+            <span>${idx+1}. ${team.teamName}</span>
+            <span>${team.points} pt (${team.wins}-${team.losses})</span>
         </div>`;
     });
+    html += `</div></div>`;
+
+    html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
+    html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
     
+    fullLeagueSchedule.forEach(giornata => {
+        const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
+        if(!myMatch) return;
+
+        const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
+        let resText = myMatch.score || 'Da giocare';
+        
+        let statusColor = "#aaaaaa"; 
+        if (myMatch.score) {
+            let scores = myMatch.score.split(" - ");
+            let homeScore = parseInt(scores[0]);
+            let awayScore = parseInt(scores[1]);
+            
+            // CORREZIONE COLORE LOGICO PERFETTA
+            if (myMatch.home === "La Tua Squadra") {
+                statusColor = homeScore > awayScore ? "#28a745" : "#dc3545";
+            } else {
+                statusColor = awayScore > homeScore ? "#28a745" : "#dc3545";
+            }
+        }
+
+        html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
+            <div><strong>Gara ${giornata.round}:</strong> VS ${vsTeam}</div>
+            <div style="font-weight: bold !important; color: ${statusColor} !important;">${resText}</div>
+        </div>`;
+    });
     html += `</div>`;
+
     container.innerHTML = html;
+
+    // Aggiornamento contatore statico in alto a destra "0 - 0"
+    const allDivs = document.querySelectorAll('div');
+    for (let d of allDivs) {
+        if (d.innerText.trim().match(/^\d+\s*-\s*\d+$/)) {
+            d.innerHTML = `<span style="color:#28a745; font-weight:bold;">${userWins}</span> - <span style="color:#dc3545; font-weight:bold;">${userLosses}</span>`;
+            break;
+        }
+    }
 }
 
-// --- SIMULATORE MATCH REGULAR SEASON ---
+// ==========================================
+// 5. MOTORE DI SIMULAZIONE CPU
+// ==========================================
+function simulateCPUMatches(currentRound) {
+    const roundData = fullLeagueSchedule[currentRound - 1];
+    if (!roundData) return;
+    
+    roundData.matches.forEach(match => {
+        if (match.home === "La Tua Squadra" || match.away === "La Tua Squadra") return; 
+
+        let homePlayers = allPlayers.filter(p => p.club === match.home);
+        let homeOvr = homePlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (homePlayers.length || 1);
+        
+        let awayPlayers = allPlayers.filter(p => p.club === match.away);
+        let awayOvr = awayPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (awayPlayers.length || 1);
+
+        let homeEff = 0.70 + ((homeOvr + 3) * 0.0035) + ((Math.random() * 14 - 7) / 100);
+        let awayEff = 0.70 + (awayOvr * 0.0035) + ((Math.random() * 14 - 7) / 100);
+
+        let pace = Math.round(72 + Math.random() * 12);
+        let scoreHome = Math.round(pace * homeEff);
+        let scoreAway = Math.round(pace * awayEff);
+
+        if (scoreHome === scoreAway) scoreHome += Math.random() > 0.5 ? 2 : -2;
+
+        match.score = `${scoreHome} - ${scoreAway}`;
+        match.simulated = true;
+
+        if (scoreHome > scoreAway) {
+            standings[match.home].wins++; standings[match.home].points += 2;
+            standings[match.away].losses++;
+        } else {
+            standings[match.away].wins++; standings[match.away].points += 2;
+            standings[match.home].losses++;
+        }
+    });
+}
+
+// ==========================================
+// 6. SIMULATORE MATCH UTENTE
+// ==========================================
 function simMatch() {
     if (currentMatchNumber > 38) {
         buildPlayoffBrackets();
@@ -3845,15 +3637,6 @@ function simMatch() {
                 standings["La Tua Squadra"].losses++;
             }
 
-            // CONTATORE VISIVO SQUADRA (Fisso e sicuro)
-            const divs = document.querySelectorAll('div');
-            for (let d of divs) {
-                if (d.innerText.trim().includes("-") && d.innerText.length <= 9 && !isNaN(parseInt(d.innerText))) {
-                    d.innerHTML = `<span style="color:#28a745;">${userWins}</span> - <span style="color:#dc3545;">${userLosses}</span>`;
-                    break;
-                }
-            }
-
             simulateCPUMatches(currentMatchNumber);
 
             if (currentMatchNumber === 19) {
@@ -3892,6 +3675,329 @@ function simMatch() {
     }, 120);
 }
 window.simMatch = simMatch;
+
+// ==========================================
+// 7. MERCATO DI RIPARAZIONE (FIX CRASH SG)
+// ==========================================
+window.startMidSeasonMarket = function() {
+    document.getElementById('main-game-viewport').classList.remove('game-mode');
+    
+    const container = document.getElementById('draft-options-container');
+    document.getElementById('draft-panel').style.opacity = "1";
+    document.getElementById('draft-panel').style.pointerEvents = "auto";
+    document.getElementById('draft-title-text').innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:1.3rem;">🔄 MERCATO DI RIPARAZIONE</span><br><span style="color:#fff; font-size:0.85rem;">Seleziona massimo 2 giocatori da sostituire</span>`;
+    
+    container.innerHTML = "";
+    playersToCut = [];
+
+    Object.keys(userTeam).forEach(slotIndex => {
+        const player = userTeam[slotIndex];
+        const card = document.createElement('div');
+        card.className = 'draft-option-card';
+        card.id = `cut-card-${slotIndex}`;
+        card.style.cssText = "background:#0f2439 !important; opacity:1 !important; filter:none !important; border:2px solid #1e3d59 !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#ffffff !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important; display:block !important;";
+        card.innerHTML = `
+            <div style="color:#ffffff !important; margin-bottom:10px;">
+                <div style="font-weight:bold !important; font-size:1.1rem !important; color:#ff9800 !important;">${player.cognome}</div>
+                <div style="font-size:0.8rem !important; color:#cbd5e0 !important;">${orderRoles[slotIndex]} (${player.club})</div>
+            </div>
+            <button style="background:#e53e3e !important; color:white !important; border:none !important; padding:8px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important;" onclick="toggleCutPlayer(${slotIndex})">Taglia</button>
+        `;
+        container.appendChild(card);
+    });
+
+    let confirmBtn = document.createElement('button');
+    confirmBtn.innerText = "CONFERMA I TAGLI E APRI IL DRAFT";
+    confirmBtn.style.cssText = "grid-column: span 5; padding:12px; background:#38a169; color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer; margin-top:15px; font-size:1rem;";
+    confirmBtn.onclick = processCutsAndRedraft;
+    container.appendChild(confirmBtn);
+}
+
+window.toggleCutPlayer = function(slotIndex) {
+    const idx = playersToCut.indexOf(slotIndex);
+    const card = document.getElementById(`cut-card-${slotIndex}`);
+    if (idx > -1) {
+        playersToCut.splice(idx, 1);
+        card.style.cssText = "background:#0f2439 !important; opacity:1 !important; filter:none !important; border:2px solid #1e3d59 !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#ffffff !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important;";
+    } else {
+        if (playersToCut.length >= 2) {
+            alert("Puoi tagliare al massimo 2 giocatori!");
+            return;
+        }
+        playersToCut.push(slotIndex);
+        card.style.cssText = "background:#441d24 !important; opacity:1 !important; filter:none !important; border:2px solid #e53e3e !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#ffffff !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important;";
+    }
+}
+
+function processCutsAndRedraft() {
+    if (playersToCut.length === 0) {
+        alert("Nessun cambio effettuato!");
+        document.getElementById('draft-panel').style.opacity = "0";
+        document.getElementById('draft-panel').style.pointerEvents = "none";
+        closeBoxscore();
+        return;
+    }
+    executeNextSubDraft();
+}
+
+function executeNextSubDraft() {
+    if (playersToCut.length === 0) {
+        document.getElementById('draft-title-text').innerText = "Mercato Completato!";
+        document.getElementById('draft-options-container').innerHTML = '<div style="color:#38a169; font-weight:bold; padding:20px; text-align:center; grid-column: span 5; font-size:1.2rem;">Roster aggiornato!</div>';
+        
+        setTimeout(() => {
+            document.getElementById('draft-panel').style.opacity = "0";
+            document.getElementById('draft-panel').style.pointerEvents = "none";
+            closeBoxscore();
+        }, 1200);
+        return;
+    }
+
+    const activeSlot = playersToCut[0];
+    const roleNeeded = orderRoles[activeSlot];
+
+    document.getElementById('draft-title-text').innerHTML = `Sostituzione: Scegli il nuovo <span style="color:#ff9800; font-weight:bold;">${roleNeeded}</span>`;
+
+    let pool = [];
+    if (roleNeeded === 'SG') {
+        pool = allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG');
+    } else {
+        pool = allPlayers.filter(p => p.ruolo1 === roleNeeded || p.ruolo2 === roleNeeded);
+    }
+    
+    let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
+    const container = document.getElementById('draft-options-container');
+    container.innerHTML = '';
+
+    choices.forEach(player => {
+        const card = document.createElement('div');
+        card.className = 'draft-option-card';
+        card.style.cssText = "background:#0f2439 !important; opacity:1 !important; filter:none !important; border:2px solid #1e3d59 !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.4) !important; color:#ffffff !important; margin:5px !important; display:block !important;";
+        const safeString = encodeURIComponent(JSON.stringify(player));
+        
+        card.innerHTML = `
+            <div style="color:#ffffff !important; margin-bottom:8px;">
+                <div style="color:#ff9800 !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
+                <div style="font-size:0.75rem; color:#cbd5e0 !important;">${player.club}</div>
+            </div>
+            <table style="width:100% !important; margin-bottom:12px !important; border-collapse:collapse !important; background:rgba(255,255,255,0.05) !important; border-radius:4px !important; font-size:0.8rem !important; color:#ffffff !important;">
+                <tr>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">PTS: <span style="color:#ffc107;">${player.ppg || 0}</span></td>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">AST: <span style="color:#ffc107;">${player.apg || 0}</span></td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">REB: <span style="color:#ffc107;">${player.rpg || 0}</span></td>
+                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.1); font-weight:bold;">STL: <span style="color:#ffc107;">${player.spg || 0}</span></td>
+                </tr>
+            </table>
+            <button style="background:#ff9800 !important; color:white !important; border:none !important; padding:8px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important;" onclick="insertNewPlayer(${activeSlot}, '${safeString}')">Ingaggia</button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+window.insertNewPlayer = function(slotIndex, encodedData) {
+    const player = JSON.parse(decodeURIComponent(encodedData));
+    userTeam[slotIndex] = player;
+
+    const slotElement = document.getElementById(`court-slot-${slotIndex}`);
+    if (slotElement) {
+        slotElement.innerHTML = `
+            <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${orderRoles[slotIndex]}</span>
+            <div class="p-name" style="color:white; font-weight:bold;">${player.cognome}</div>
+            <div class="p-club" style="font-size:0.7rem; color:#eee;">${player.club}</div>
+            <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
+        `;
+    }
+
+    playersToCut.shift(); 
+    executeNextSubDraft();
+}
+
+// ==========================================
+// 8. STRUTTURA E CONTROLLO TABELLONE PLAYOFF
+// ==========================================
+function buildPlayoffBrackets() {
+    let sorted = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
+    
+    let getTeamNameAt = (index, fallback) => {
+        return (sorted[index] && sorted[index].teamName) ? sorted[index].teamName : fallback;
+    };
+
+    let primo = getTeamNameAt(0, "1° Classificata");
+    let secondo = getTeamNameAt(1, "2° Classificata");
+    let terzo = getTeamNameAt(2, "3° Classificata");
+    let quarto = getTeamNameAt(3, "4° Classificata");
+    let quinto = getTeamNameAt(4, "5° Classificata");
+    let sesto = getTeamNameAt(5, "6° Classificata");
+    let settimo = getTeamNameAt(6, "7° Classificata");
+
+    let winPlayInA = getTeamNameAt(7, "Vincente Play-In A"); 
+    let winPlayInB = getTeamNameAt(8, "Vincente Play-In B"); 
+
+    currentPlayoffRound = "Quarti di Finale";
+
+    playoffBracket = {
+        round: "Quarti",
+        series: [
+            { id: 1, team1: primo, team2: sesto, wins1: 0, wins2: 0, status: "In Corso" },
+            { id: 2, team1: secondo, team2: winPlayInA, wins1: 0, wins2: 0, status: "In Corso" },
+            { id: 3, team1: terzo, team2: winPlayInB, wins1: 0, wins2: 0, status: "In Corso" },
+            { id: 4, team1: quarto, team2: settimo, wins1: 0, wins2: 0, status: "In Corso" },
+            { id: 5, team1: quarto, team2: quinto, wins1: 0, wins2: 0, status: "In Corso" }
+        ]
+    };
+
+    closeBoxscore();
+    
+    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]') || document.querySelector('.panel-body button:last-of-type');
+    if (pBtn) {
+        pBtn.innerText = "GIOCA TURNO PLAYOFF 🏀";
+        pBtn.disabled = false;
+        pBtn.onclick = runPlayoffTurn; 
+    }
+}
+
+function renderPlayoffView() {
+    const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
+    if (!container) return;
+
+    let html = `<div style="background:rgba(255,255,255,0.05) !important; padding:10px; border-radius:8px; border:1px solid #ff9800; margin-bottom: 10px;">`;
+    html += `<h3 style="color:#ff9800 !important; margin:0 0 10px 0; font-size:0.9rem; text-align:center; font-weight:bold;">🏀 TABELLONE ACCOPPIAMENTI PLAYOFF</h3>`;
+    
+    playoffBracket.series.forEach(s => {
+        let isUserInvolved = (s.team1 === "La Tua Squadra" || s.team2 === "La Tua Squadra");
+        let borderStyle = isUserInvolved ? "border:2px solid #ff9800; background:rgba(255,152,0,0.15);" : "border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2);";
+        
+        html += `<div style="padding:8px; margin-bottom:6px; border-radius:6px; font-size:0.8rem; ${borderStyle}">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#fff !important;">
+                <span style="${s.wins1 >= 2 ? 'color:#28a745;' : ''}">${s.team1} (${s.wins1})</span>
+                <span style="color:#ff9800 !important; font-size:0.7rem; padding:0 4px;">VS</span>
+                <span style="${s.wins2 >= 2 ? 'color:#28a745;' : ''}">(${s.wins2}) ${s.team2}</span>
+            </div>
+            <div style="font-size:0.65rem; color:#aaa; text-align:center; margin-top:4px;">${s.status === "Finito" ? "🔴 SERIE CONCLUSA" : "⚡ Serie al meglio delle 3"}</div>
+        </div>`;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+window.runPlayoffTurn = function() {
+    let userSeries = playoffBracket.series.find(s => s.team1 === "La Tua Squadra" || s.team2 === "La Tua Squadra");
+    
+    if (userSeries && userSeries.status === "In Corso") {
+        alert("Scendi in campo per la tua partita di Playoff!");
+        executeUserPlayoffMatch(userSeries);
+        return;
+    }
+
+    playoffBracket.series.forEach(s => {
+        if (s.status === "Finito") return;
+
+        let p1 = Math.round(75 + Math.random() * 25);
+        let p2 = Math.round(75 + Math.random() * 25);
+        if (p1 === p2) p1 += Math.random() > 0.5 ? 2 : -2;
+
+        if (p1 > p2) s.wins1++; else s.wins2++;
+        if (s.wins1 >= 2 || s.wins2 >= 2) s.status = "Finito";
+    });
+
+    renderPlayoffView();
+};
+
+function executeUserPlayoffMatch(series) {
+    const opponentName = series.team1 === "La Tua Squadra" ? series.team2 : series.team1;
+    document.getElementById('main-game-viewport').classList.add('game-mode');
+    
+    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
+    if(banner) {
+        banner.innerHTML = `
+            <div style="color:#ff9800; font-weight:bold; font-size:1rem; margin-bottom:2px;">🏀 PLAYOFF LNP: VS ${opponentName.toUpperCase()}</div>
+            <div id="match-status-text" style="font-size:0.8rem; color:#fff;">Simulazione serie in corso...</div>
+        `;
+    }
+
+    let finalUserScore = Math.round(75 + Math.random() * 20);
+    let finalOppScore = Math.round(75 + Math.random() * 20);
+    if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 4 : -4;
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+        currentStep++;
+        let currentLiveUser = Math.round((finalUserScore / 10) * currentStep);
+        let currentLiveOpp = Math.round((finalOppScore / 10) * currentStep);
+        
+        const ticker = document.getElementById('live-simulation-ticker');
+        if(ticker) ticker.innerText = `PLAYOFF LIVE: La Tua Squadra ${currentLiveUser} - ${currentLiveOpp} ${opponentName}`;
+
+        if (currentStep >= 10) {
+            clearInterval(interval); 
+
+            let vinta = false;
+            if (finalUserScore > finalOppScore) {
+                vinta = true;
+                if (series.team1 === "La Tua Squadra") series.wins1++; else series.wins2++;
+            } else {
+                if (series.team1 === "La Tua Squadra") series.wins2++; else series.wins1++;
+            }
+
+            if (series.wins1 >= 2 || series.wins2 >= 2) series.status = "Finito";
+
+            playoffBracket.series.forEach(s => {
+                if (s.id === series.id || s.status === "Finito") return;
+                if (Math.random() > 0.5) s.wins1++; else s.wins2++;
+                if (s.wins1 >= 2 || s.wins2 >= 2) s.status = "Finito";
+            });
+
+            if(banner) {
+                banner.innerHTML = `
+                    <div style="font-size:1.2rem; color:#fff; font-weight:bold;">FINALE: ${finalUserScore} - ${finalOppScore}</div>
+                    <div style="font-size:0.9rem; color:${vinta ? '#28a745':'#dc3545'}; font-weight:bold; margin:4px 0;">
+                        ${vinta ? '🏆 VINCI GARA!' : '❌ PERDI GARA!'}
+                    </div>
+                    <button onclick="closeBoxscore()" style="background: #ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">TORNA AL TABELLONE ➔</button>
+                `;
+            }
+        }
+    }, 120);
+}
+
+// ==========================================
+// 9. FUNZIONI DI SUPPORTO BANNER E CHIUSURA
+// ==========================================
+function updateMatchBanner() {
+    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
+    if(!banner) return;
+
+    if(currentMatchNumber <= 38) {
+        const giornataData = fullLeagueSchedule[currentMatchNumber - 1];
+        const myMatch = giornataData.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
+        const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
+        banner.innerHTML = `PROSSIMO TURNO LNP: <strong style="color:#ff9800;">${vsTeam}</strong> | <span style="opacity:0.7;">GARA ${currentMatchNumber}/38</span>`;
+    } else {
+        banner.innerHTML = `🏀 FASE FINALE POST-SEASON: <strong style="color:#ff9800;">${currentPlayoffRound.toUpperCase()}</strong>`;
+    }
+}
+
+function closeBoxscore() {
+    document.getElementById('main-game-viewport').classList.remove('game-mode');
+    const ticker = document.getElementById('live-simulation-ticker');
+    if(ticker) ticker.innerText = "";
+    
+    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
+    if(pBtn) pBtn.disabled = false;
+    
+    if(currentMatchNumber <= 38) {
+        renderCalendarAndStandings();
+    } else {
+        renderPlayoffView();
+    }
+    updateMatchBanner();
+}
+window.closeBoxscore = closeBoxscore;
+                  
+
    
 
 </script>
