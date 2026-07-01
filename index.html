@@ -3256,10 +3256,6 @@
         ];
 
          // Fine dell'array all'Players
-
-// --- VARIABILI DI STATO GLOBALI ---; // Fine dell'array all'Players originale
-
-// --- VARIABILI DI STATO GLOBALI ---
 // --- VARIABILI DI STATO GLOBALI ---
 const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
 const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
@@ -3277,7 +3273,7 @@ let standings = {};
 let playerStatsStore = {}; 
 let playersToCut = []; 
 
-// --- INIZIALIZZAZIONE ---
+// --- INIZIALIZZAZIONE DATI ---
 function initChampionshipData() {
     standings = {};
     totalTeams.forEach(team => {
@@ -3299,7 +3295,7 @@ function initChampionshipData() {
     });
 }
 
-// --- GENERATORE CALENDARIO (BERGER) ---
+// --- GENERATORE CALENDARIO REALE (BERGER) ---
 function generatePerfectSchedule() {
     initChampionshipData();
     fullLeagueSchedule = [];
@@ -3323,7 +3319,7 @@ function generatePerfectSchedule() {
         list.splice(1, 0, list.pop());
     }
 
-    // Ritorno
+    // Girone di Ritorno
     for (let r = 0; r < rounds; r++) {
         let roundMatches = fullLeagueSchedule[r].matches.map(m => {
             return { home: m.away, away: m.home, score: "", simulated: false };
@@ -3335,7 +3331,7 @@ function generatePerfectSchedule() {
     renderStandingsTable();
 }
 
-// --- RENDERING INTERFACCIA ---
+// --- VISUALIZZAZIONE CALENDARIO E CLASSIFICA ---
 function renderCalendarList() {
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list');
     if (!container) return;
@@ -3359,18 +3355,30 @@ function renderCalendarList() {
 }
 
 function renderStandingsTable() {
-    const container = document.getElementById('standings-box'); 
-    if (!container) return;
+    // Cerca il box classifica, se non esiste crea un fallback dinamico sotto il calendario
+    let container = document.getElementById('standings-box'); 
+    if (!container) {
+        const calBox = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list');
+        if (calBox) {
+            container = document.createElement('div');
+            container.id = "standings-box";
+            container.style = "margin-top:20px; padding:10px; background:#fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);";
+            calBox.parentNode.appendChild(container);
+        } else {
+            return;
+        }
+    }
 
     let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
     
-    let html = `<table class="standings-table" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+    let html = `<h3 style="color:var(--lnp-blue); margin-bottom:8px; font-size:1rem;">🏆 CLASSIFICA SERIE A2</h3>`;
+    html += `<table class="standings-table" style="width:100%; border-collapse:collapse; font-size:0.85rem; color:#333;">
         <thead>
             <tr style="background:var(--lnp-blue); color:white; text-align:left;">
                 <th style="padding:6px;">Pos</th>
                 <th>Squadra</th>
-                <th>Pt</th>
-                <th>V-P</th>
+                <th style="text-align:center;">Pt</th>
+                <th style="text-align:center;">V-P</th>
             </tr>
         </thead>
         <tbody>`;
@@ -3379,16 +3387,16 @@ function renderStandingsTable() {
         let pos = idx + 1;
         let rowColor = "";
         
-        if (pos === 1) rowColor = "background:rgba(40,167,69,0.15); font-weight:bold;"; 
-        else if (pos >= 2 && pos <= 7) rowColor = "background:rgba(0,123,255,0.08);"; 
-        else if (pos >= 8 && pos <= 13) rowColor = "background:rgba(255,193,7,0.08);"; 
-        else if (pos >= 16 && pos <= 19) rowColor = "background:rgba(220,53,69,0.08);"; 
+        if (pos === 1) rowColor = "background:rgba(40,167,69,0.12); font-weight:bold;"; 
+        else if (pos >= 2 && pos <= 7) rowColor = "background:rgba(0,123,255,0.06);"; 
+        else if (pos >= 8 && pos <= 13) rowColor = "background:rgba(255,193,7,0.06);"; 
+        else if (pos >= 16 && pos <= 19) rowColor = "background:rgba(220,53,69,0.06);"; 
 
-        html += `<tr style="${rowColor} border-bottom:1px solid #ddd;">
-            <td style="padding:6px;">${pos}</td>
-            <td style="font-weight:${team.teamName === "La Tua Squadra" ? 'bold':'normal'}">${team.teamName}</td>
-            <td>${team.points}</td>
-            <td>${team.wins}-${team.losses}</td>
+        html += `<tr style="${rowColor} border-bottom:1px solid #eee;">
+            <td style="padding:6px; font-weight:bold;">${pos}</td>
+            <td style="font-weight:${team.teamName === "La Tua Squadra" ? 'bold':'normal'}; color:${team.teamName === "La Tua Squadra" ? 'var(--lnp-orange)':'#333'}">${team.teamName}</td>
+            <td style="text-align:center; font-weight:bold;">${team.points}</td>
+            <td style="text-align:center;">${team.wins}-${team.losses}</td>
         </tr>`;
     });
 
@@ -3398,16 +3406,25 @@ function renderStandingsTable() {
 }
 
 function renderTopScorers() {
-    const container = document.getElementById('top-scorers-box');
-    if (!container) return;
+    let container = document.getElementById('top-scorers-box');
+    if (!container) {
+        const stb = document.getElementById('standings-box');
+        if (stb) {
+            container = document.createElement('div');
+            container.id = "top-scorers-box";
+            stb.parentNode.appendChild(container);
+        } else {
+            return;
+        }
+    }
 
     let leaders = Object.values(playerStatsStore)
         .filter(p => p.gamesPlayed > 0)
         .sort((a, b) => b.avgPoints - a.avgPoints)
         .slice(0, 5);
 
-    let html = `<div style="font-size:0.85rem; margin-top:10px; padding:8px; background:rgba(0,0,0,0.02); border-radius:4px;">`;
-    html += `<strong style="color:var(--lnp-orange);">🏀 TOP SCORERS LNP:</strong><ul style="padding-left:15px; margin:5px 0;">`;
+    let html = `<div style="font-size:0.85rem; margin-top:12px; padding:8px; background:rgba(0,0,0,0.03); border-radius:4px; color:#333;">`;
+    html += `<strong style="color:var(--lnp-orange);">🏀 TOP SCORERS CAMPIONATO:</strong><ul style="padding-left:15px; margin:5px 0;">`;
     leaders.forEach((p, i) => {
         html += `<li>${i+1}. <strong>${p.cognome}</strong> (${p.club}) - ${p.avgPoints.toFixed(1)} PPG</li>`;
     });
@@ -3462,23 +3479,17 @@ function simulateIndividualCPUStats(winPlayers, winScore, losePlayers, loseScore
             playerStatsStore[key].avgPoints = playerStatsStore[key].totalPoints / playerStatsStore[key].gamesPlayed;
         }
     }
-    if(losePlayers.length > 0) {
-        let p2 = losePlayers[Math.floor(Math.random() * losePlayers.length)];
-        let key = `${p2.cognome}_${p2.club}`;
-        if(playerStatsStore[key]) {
-            playerStatsStore[key].totalPoints += Math.round(loseScore * (0.22 + Math.random() * 0.12));
-            playerStatsStore[key].gamesPlayed++;
-            playerStatsStore[key].avgPoints = playerStatsStore[key].totalPoints / playerStatsStore[key].gamesPlayed;
-        }
-    }
 }
 
-// --- MERCATO DI RIPARAZIONE (GIORNATA 20) ---
+// --- DRAFT DI RIPARAZIONE (GIORNATA 20) ---
 window.startMidSeasonMarket = function() {
+    // Chiude subito il vecchio viewport di partita per evitare sovrapposizioni
+    document.getElementById('main-game-viewport').classList.remove('game-mode');
+    
     const container = document.getElementById('draft-options-container');
     document.getElementById('draft-panel').style.opacity = "1";
     document.getElementById('draft-panel').style.pointerEvents = "auto";
-    document.getElementById('draft-title-text').innerHTML = `🔄 <span style="color:var(--lnp-orange);">MERCATO DI RIPARAZIONE</span>: Scegli max 2 giocatori da tagliare`;
+    document.getElementById('draft-title-text').innerHTML = `🔄 <span style="color:var(--lnp-orange); font-weight:bold;">MERCATO DI RIPARAZIONE</span><br><small style="color:#fff; font-size:0.8rem;">Seleziona al massimo 2 giocatori da sostituire nel tuo quintetto</small>`;
     
     container.innerHTML = "";
     playersToCut = [];
@@ -3488,19 +3499,20 @@ window.startMidSeasonMarket = function() {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
         card.id = `cut-card-${slotIndex}`;
+        card.style = "background:#fff; border-radius:6px; padding:10px; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.1); color:#333;";
         card.innerHTML = `
             <div>
-                <div class="p-name" style="color:#fff; font-weight:bold;">${player.cognome}</div>
-                <div class="p-club" style="font-size:0.7rem; color:var(--text-muted);">${orderRoles[slotIndex]} (OVR: ${player.ovr || 75})</div>
+                <div class="p-name" style="color:var(--lnp-blue); font-weight:bold; font-size:1.1rem;">${player.cognome}</div>
+                <div class="p-club" style="font-size:0.75rem; color:#666; margin-bottom:6px;">${orderRoles[slotIndex]} (${player.club})</div>
             </div>
-            <button class="btn-choose" style="background:#dc3545; margin-top:8px;" onclick="toggleCutPlayer(${slotIndex})">Taglia</button>
+            <button class="btn-choose" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;" onclick="toggleCutPlayer(${slotIndex})">Taglia</button>
         `;
         container.appendChild(card);
     });
 
     let confirmBtn = document.createElement('button');
-    confirmBtn.innerText = "CONFERMA I TAGLI E APRI IL DRAFT";
-    confirmBtn.style = "grid-column: span 5; padding:12px; background:#28a745; color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer; margin-top:15px;";
+    confirmBtn.innerText = "CONFERMA I TAGLI E APRI IL MERCATO";
+    confirmBtn.style = "grid-column: span 5; padding:12px; background:#28a745; color:white; font-weight:bold; border:none; border-radius:6px; cursor:pointer; margin-top:15px; font-size:1rem; box-shadow:0 3px 6px rgba(0,0,0,0.15);";
     confirmBtn.onclick = processCutsAndRedraft;
     container.appendChild(confirmBtn);
 }
@@ -3510,6 +3522,7 @@ window.toggleCutPlayer = function(slotIndex) {
     const card = document.getElementById(`cut-card-${slotIndex}`);
     if (idx > -1) {
         playersToCut.splice(idx, 1);
+        card.style.background = "#fff";
         card.style.border = "none";
     } else {
         if (playersToCut.length >= 2) {
@@ -3517,13 +3530,16 @@ window.toggleCutPlayer = function(slotIndex) {
             return;
         }
         playersToCut.push(slotIndex);
+        card.style.background = "#ffe3e5";
         card.style.border = "2px solid #dc3545";
     }
 }
 
 function processCutsAndRedraft() {
     if (playersToCut.length === 0) {
-        alert("Nessun cambio effettuato. Il tuo roster resta invariato!");
+        alert("Nessun cambio effettuato! Il tuo roster resta invariato per il ritorno.");
+        document.getElementById('draft-panel').style.opacity = "0";
+        document.getElementById('draft-panel').style.pointerEvents = "none";
         closeBoxscore();
         return;
     }
@@ -3533,7 +3549,7 @@ function processCutsAndRedraft() {
 function executeNextSubDraft() {
     if (playersToCut.length === 0) {
         document.getElementById('draft-title-text').innerText = "Mercato Completato!";
-        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745; font-weight:bold; padding:15px; text-align:center; grid-column: span 5;">Roster aggiornato con successo!</div>';
+        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745; font-weight:bold; padding:20px; text-align:center; grid-column: span 5; font-size:1.2rem;">Roster salvato per il Girone di Ritorno!</div>';
         
         setTimeout(() => {
             document.getElementById('draft-panel').style.opacity = "0";
@@ -3546,7 +3562,7 @@ function executeNextSubDraft() {
     const activeSlot = playersToCut[0];
     const roleNeeded = orderRoles[activeSlot];
 
-    document.getElementById('draft-title-text').innerHTML = `Sostituzione Ruolo: <span style="color:var(--lnp-orange);">${roleNeeded}</span>`;
+    document.getElementById('draft-title-text').innerHTML = `Mercato di Riparazione: Scegli il nuovo <span style="color:var(--lnp-orange); font-weight:bold;">${roleNeeded}</span>`;
 
     let pool = allPlayers.filter(p => p.ruolo1 === roleNeeded || p.ruolo2 === roleNeeded);
     let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
@@ -3557,13 +3573,18 @@ function executeNextSubDraft() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
+        card.style = "background:#fff; border-radius:8px; padding:12px; text-align:center; box-shadow:0 3px 6px rgba(0,0,0,0.1); color:#333;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         card.innerHTML = `
             <div>
-                <div class="p-name" style="color:var(--lnp-orange); font-weight:bold;">${player.cognome}</div>
-                <div class="p-club" style="font-size:0.7rem; color:#ccc;">${player.club} (OVR: ${player.ovr || 75})</div>
+                <div class="p-name" style="color:var(--lnp-blue); font-weight:bold; font-size:1.1rem;">${player.cognome}</div>
+                <div class="p-club" style="font-size:0.75rem; color:#666; margin-bottom:8px;">${player.club}</div>
             </div>
-            <button class="btn-choose" style="margin-top:8px;" onclick="insertNewPlayer(${activeSlot}, '${safeString}')">Ingaggia</button>
+            <div style="font-size:0.8rem; margin-bottom:10px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f8f9fa; padding:4px; border-radius:4px;">
+                <span>PTS: <strong>${player.ppg || 0}</strong></span><span>AST: <strong>${player.apg || 0}</strong></span>
+                <span>REB: <strong>${player.rpg || 0}</strong></span><span>STL: <strong>${player.spg || 0}</strong></span>
+            </div>
+            <button class="btn-choose" style="background:var(--lnp-orange); color:white; border:none; padding:6px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;" onclick="insertNewPlayer(${activeSlot}, '${safeString}')">Ingaggia</button>
         `;
         container.appendChild(card);
     });
@@ -3577,9 +3598,9 @@ window.insertNewPlayer = function(slotIndex, encodedData) {
     if (slotElement) {
         slotElement.innerHTML = `
             <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${orderRoles[slotIndex]}</span>
-            <div class="p-name" style="color:white;">${player.cognome}</div>
-            <div class="p-club">${player.club}</div>
-            <div class="p-stats-mini"><span>OVR: ${player.ovr || 75}</span></div>
+            <div class="p-name" style="color:white; font-weight:bold;">${player.cognome}</div>
+            <div class="p-club" style="font-size:0.7rem; color:#eee;">${player.club}</div>
+            <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
         `;
     }
 
@@ -3630,14 +3651,14 @@ window.startDraftProcess = startDraftProcess;
 function renderDraftRound() {
     if(currentDraftStep >= orderRoles.length) {
         document.getElementById('draft-title-text').innerText = "Draft Completato!";
-        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745; font-weight:bold; padding:15px; text-align:center; grid-column: span 5;">Roster pronto! Premi "GIOCA PARTITA".</div>';
+        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Roster pronto! Clicca su "GIOCA PARTITA".</div>';
         generatePerfectSchedule(); 
         document.getElementById('btn-play-game').disabled = false;
         updateMatchBanner();
         return;
     }
     const activeRole = orderRoles[currentDraftStep];
-    document.getElementById('draft-title-text').innerHTML = `Fase ${currentDraftStep + 1}: Scegli il tuo <span style="color:var(--lnp-orange);">${activeRole}</span>`;
+    document.getElementById('draft-title-text').innerHTML = `Fase ${currentDraftStep + 1}: Scegli il tuo <span style="color:var(--lnp-orange); font-weight:bold;">${activeRole}</span>`;
 
     let pool = (activeRole === 'SG') ? allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG') : allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
     const currentSelectedCognomi = Object.values(userTeam).map(p => p ? p.cognome : "");
@@ -3650,16 +3671,18 @@ function renderDraftRound() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
+        card.style = "background:#fff; border-radius:8px; padding:12px; text-align:center; box-shadow:0 3px 6px rgba(0,0,0,0.1); color:#333;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         card.innerHTML = `
             <div>
-                <div class="p-name" style="color:var(--lnp-orange); font-size:1rem; font-weight:bold;">${player.cognome}</div>
-                <div class="p-club" style="font-size:0.7rem; margin-bottom: 8px; color:#aaa;">${player.club}</div>
+                <div class="p-name" style="color:var(--lnp-blue); font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
+                <div class="p-club" style="font-size:0.75rem; margin-bottom:6px; color:#666;">${player.club}</div>
             </div>
-            <div class="p-stats-mini" style="margin-bottom:8px; font-size:0.75rem;">
-                <span>PTS: <strong>${player.ppg || 0}</strong></span> | <span>OVR: <strong>${player.ovr || 75}</strong></span>
+            <div style="font-size:0.8rem; margin-bottom:10px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f8f9fa; padding:4px; border-radius:4px;">
+                <span>PTS: <strong>${player.ppg || 0}</strong></span><span>AST: <strong>${player.apg || 0}</strong></span>
+                <span>REB: <strong>${player.rpg || 0}</strong></span><span>STL: <strong>${player.spg || 0}</strong></span>
             </div>
-            <button class="btn-choose" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
+            <button class="btn-choose" style="background:var(--lnp-orange); color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
         `;
         container.appendChild(card);
     });
@@ -3674,8 +3697,8 @@ function pickPlayer(role, encodedData) {
         slotElement.innerHTML = `
             <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span>
             <div class="p-name" style="color:white; font-weight:bold;">${player.cognome}</div>
-            <div class="p-club">${player.club}</div>
-            <div class="p-stats-mini"><span>OVR: ${player.ovr || 75}</span></div>
+            <div class="p-club" style="font-size:0.7rem; color:#ddd;">${player.club}</div>
+            <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
         `;
     }
     currentDraftStep++;
@@ -3711,7 +3734,6 @@ function simMatch() {
     document.getElementById('main-game-viewport').classList.add('game-mode');
     document.getElementById('btn-play-game').disabled = true;
 
-    // Recupero del quintetto CPU avversario per la sovrimpressione grafica
     const oppPlayers = allPlayers.filter(p => p.club === opponentName).slice(0, 5);
     let oppRosterNames = oppPlayers.map(p => p.cognome).join(", ");
 
@@ -3742,10 +3764,15 @@ function simMatch() {
 
     if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
 
-    // Calcolo MVP Utente
+    // Calcolo MVP Utente con Statistiche Complete
     let topScorer = playersArray[Math.floor(Math.random() * playersArray.length)];
-    let mvpPts = Math.round((topScorer.ppg || 12) * (0.7 + Math.random() * 0.7) + (finalUserScore * 0.04));
+    let mvpPts = Math.round((topScorer.ppg || 12) * (0.8 + Math.random() * 0.6) + (finalUserScore * 0.03));
+    let mvpAst = Math.round((topScorer.apg || 3) * (0.6 + Math.random() * 0.8));
+    let mvpReb = Math.round((topScorer.rpg || 4) * (0.5 + Math.random() * 1.0));
+    let mvpStl = Math.round((topScorer.spg || 1) * (0.5 + Math.random() * 1.2));
     
+    let mvpString = `${mvpPts} PT | ${mvpReb} RIM | ${mvpAst} AST | ${mvpStl} REC`;
+
     let userKey = `${topScorer.cognome}_${topScorer.club}`;
     if(playerStatsStore[userKey]) {
         playerStatsStore[userKey].totalPoints += mvpPts;
@@ -3767,7 +3794,6 @@ function simMatch() {
             myMatch.score = `${finalUserScore} - ${finalOppScore}`;
             myMatch.simulated = true;
 
-            // Aggiorna Classifica e contatori globali
             if (finalUserScore > finalOppScore) {
                 userWins++;
                 standings["La Tua Squadra"].wins++; standings["La Tua Squadra"].points += 2;
@@ -3778,11 +3804,9 @@ function simMatch() {
                 standings["La Tua Squadra"].losses++;
             }
 
-            // Aggiorna contatori grafici della UI (se esistenti nel tuo HTML)
             if(document.getElementById('user-wins-counter')) document.getElementById('user-wins-counter').innerText = userWins;
             if(document.getElementById('user-losses-counter')) document.getElementById('user-losses-counter').innerText = userLosses;
 
-            // Simula il resto della giornata CPU
             simulateCPUMatches(currentMatchNumber);
 
             const isWin = finalUserScore > finalOppScore;
@@ -3796,11 +3820,11 @@ function simMatch() {
                 document.getElementById(`cal-item-${currentMatchNumber}`).className = `calendar-item ${isWin ? 'win' : 'loss'}`;
             }
 
-            // Controllo GARA 19 -> Sblocca Mercato di Riparazione
+            // GARA 19 CONCLUSI -> Lancio Finestra di Riparazione pulito
             if (currentMatchNumber === 19) {
                 document.getElementById("banner-main-text").innerHTML = `
                     <div style="font-size:1.1rem; color:#fff; font-weight:bold;">FINALE: ${finalUserScore} - ${finalOppScore}</div>
-                    <div style="font-size:0.85rem; color:var(--lnp-orange); margin:4px 0;">MVP: ${topScorer.cognome} con ${mvpPts} punti!</div>
+                    <div style="font-size:0.85rem; color:var(--lnp-orange); margin:4px 0;">🌟 MVP: ${topScorer.cognome} (${mvpString})</div>
                     <hr style="border:0; border-top:1px solid #444; margin:8px 0;">
                     <div style="font-weight:bold; color:#ffc107;">GIRONE D'ANDATA CONCLUSO!</div>
                     <button onclick="startMidSeasonMarket()" style="background:var(--lnp-orange); color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:8px;">APRI MERCATO DI RIPARAZIONE 🔄</button>
@@ -3809,20 +3833,18 @@ function simMatch() {
                 return;
             }
 
-            // Controllo FINE STAGIONE (Gara 38)
             if (currentMatchNumber === 38) {
                 document.getElementById("banner-main-text").innerHTML = `
                     <div style="font-size:1.2rem; color:var(--lnp-orange); font-weight:bold;">REGULAR SEASON TERMINATA!</div>
-                    <div style="color:#fff; font-size:0.85rem; margin-top:4px;">Gara 38: ${finalUserScore} - ${finalOppScore} (MVP: ${topScorer.cognome} ${mvpPts}pt)</div>
+                    <div style="color:#fff; font-size:0.85rem; margin-top:4px;">Gara 38: ${finalUserScore} - ${finalOppScore} (MVP: ${topScorer.cognome} - ${mvpString})</div>
                     <button onclick="closeBoxscore()" style="background:#28a745; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:8px;">VEDI VERDETTI FINALI ➔</button>
                 `;
                 return;
             }
 
-            // Avanzamento Standard
             document.getElementById("banner-main-text").innerHTML = `
                 <div style="font-size:1.1rem; color:#fff; font-weight:bold;">FINALE: ${finalUserScore} - ${finalOppScore}</div>
-                <div style="font-size:0.85rem; color:var(--lnp-orange); margin:4px 0;">MVP: ${topScorer.cognome} con ${mvpPts} punti!</div>
+                <div style="font-size:0.85rem; color:var(--lnp-orange); margin:4px 0;">🌟 MVP: ${topScorer.cognome} (${mvpString})</div>
                 <button onclick="closeBoxscore()" style="background:var(--lnp-blue); color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:8px;">AVANZA AL PROSSIMO TURNO ➔</button>
             `;
             currentMatchNumber++;
@@ -3833,3 +3855,7 @@ window.simMatch = simMatch;
 </script>
 </body>
 </html>
+// --- VARIABILI DI STATO GLOBALI ---; // Fine dell'array all'Players originale
+
+// --- VARIABILI DI STATO GLOBALI ---
+// --- VARIABILI DI STATO GLOBALI ---
