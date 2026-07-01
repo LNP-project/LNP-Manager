@@ -3492,6 +3492,9 @@ function pickPlayer(role, encodedData) {
 // ==========================================
 // 4. FIX COLORI CALENDARIO BLINDATO (MATEMATICO)
 // ==========================================
+// ==========================================
+// 4. FIX COLORI CALENDARIO BLINDATO (MATEMATICO)
+// ==========================================
 function renderCalendarAndStandings() {
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
     if (!container) return;
@@ -3528,15 +3531,11 @@ function renderCalendarAndStandings() {
         let cssClass = "lnp-text-pending"; 
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
-            let homeScore = parseInt(scores[0]);
-            let awayScore = parseInt(scores[1]);
+            let userScore = parseInt(scores[0]); // Il primo valore salvato in simMatch è SEMPRE l'utente
+            let oppScore = parseInt(scores[1]);  // Il secondo valore è SEMPRE la CPU
             
-            // Logica infallibile: estrae e confronta i punteggi in base a chi gioca in casa
-            if (myMatch.home === "La Tua Squadra") {
-                cssClass = (homeScore > awayScore) ? "lnp-text-win" : "lnp-text-loss";
-            } else {
-                cssClass = (awayScore > homeScore) ? "lnp-text-win" : "lnp-text-loss";
-            }
+            // Controllo diretto ed infallibile sul punteggio reale
+            cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
         }
 
         html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
@@ -3548,16 +3547,15 @@ function renderCalendarAndStandings() {
 
     container.innerHTML = html;
 
-    // Aggiornamento contatore statico in alto a destra "Vinte - Perse"
-    const allDivs = document.querySelectorAll('div');
+    // Aggiornamento contatore statico nel pannello squadra "Vinte - Perse"
+    const allDivs = document.querySelectorAll('div, h2, p, span');
     for (let d of allDivs) {
-        if (d.innerText.trim().match(/^\d+\s*-\s*\d+$/)) {
+        if (d.innerText.trim().match(/^\d+\s*-\s*\d+$/) && !d.classList.contains('p-name') && d.children.length <= 2) {
             d.innerHTML = `<span style="color:#28a745; font-weight:bold;">${userWins}</span> - <span style="color:#dc3545; font-weight:bold;">${userLosses}</span>`;
             break;
         }
     }
 }
-
 // ==========================================
 // 5. MOTORE DI SIMULAZIONE CPU
 // ==========================================
