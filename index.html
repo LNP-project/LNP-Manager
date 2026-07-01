@@ -3292,10 +3292,21 @@
             font-weight: bold !important;
             opacity: 1 !important;
         }
-        /* Classi di utilità per i colori del calendario */
-        .lnp-text-win { color: #28a745 !important; font-weight: bold !important; }
-        .lnp-text-loss { color: #dc3545 !important; font-weight: bold !important; }
-        .lnp-text-pending { color: #aaaaaa !important; }
+        
+        /* FORZATURA ASSOLUTA COLORI DIARIO DI BORDO E CONTATORI */
+        .lnp-text-win { 
+            color: #28a745 !important; 
+            font-weight: bold !important;
+            display: inline-block !important;
+        }
+        .lnp-text-loss { 
+            color: #dc3545 !important; 
+            font-weight: bold !important;
+            display: inline-block !important;
+        }
+        .lnp-text-pending { 
+            color: #aaaaaa !important; 
+        }
     `;
     document.head.appendChild(style);
 })();
@@ -3526,7 +3537,7 @@ function renderCalendarAndStandings() {
     html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
     html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
     
-    fullLeagueSchedule.forEach(giornata => {
+   fullLeagueSchedule.forEach(giornata => {
         const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
         if(!myMatch) return;
 
@@ -3536,14 +3547,17 @@ function renderCalendarAndStandings() {
 
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
-            let userScore = parseInt(scores[0]); // Punti fatti dall'utente
-            let oppScore = parseInt(scores[1]);  // Punti fatti dalla CPU
+            let userScore = parseInt(scores[0]); 
+            let oppScore = parseInt(scores[1]);  
             
-            // Assegnazione colore matematica basata sui punti reali
-            cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
+            // Logica matematica pura: se i tuoi punti sono maggiori, è SEMPRE classe win verde
+            if (userScore > oppScore) {
+                cssClass = "lnp-text-win";
+            } else {
+                cssClass = "lnp-text-loss";
+            }
 
-            // Formattazione del testo per evitare confusioni visive:
-            // Mostra sempre prima il punteggio di chi gioca in casa nel calendario del database
+            // Testo invertito visivamente per i match fuori casa
             if (myMatch.home === "La Tua Squadra") {
                 resText = `${userScore} - ${oppScore}`;
             } else {
@@ -3556,9 +3570,6 @@ function renderCalendarAndStandings() {
             <div class="${cssClass}" style="font-family: monospace; font-size: 0.9rem;">${resText}</div>
         </div>`;
     });
-    html += `</div>`;
-
-    container.innerHTML = html;
 
     // Aggiornamento contatore statico nel pannello squadra "Vinte - Perse"
     const allDivs = document.querySelectorAll('div, h2, p, span');
