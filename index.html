@@ -3256,10 +3256,49 @@
         ];
 // --- VARIABILI DI STATO GLOBALI ---
 // ==========================================
-// 1. VARIABILI DI STATO GLOBALI
 // ==========================================
-   // ==========================================
-// 1. VARIABILI DI STATO GLOBALI
+// 1. INIEZIONE FORZATA CSS (ANTI-SBIADIMENTO & FIX COLORI)
+// ==========================================
+(function injectPerfectCSS() {
+    const styleId = "lnp-challenge-overrides";
+    if (document.getElementById(styleId)) return;
+    
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = `
+        /* Forza le card del Draft a vedersi perfettamente ad alto contrasto */
+        .draft-option-card, [class*="draft-option"] {
+            background: #0f2439 !important;
+            opacity: 1 !important;
+            filter: none !important;
+            visibility: visible !important;
+            border: 2px solid #1e3d59 !important;
+            color: #ffffff !important;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6) !important;
+        }
+        /* Forza i testi interni alle card a non sbiadire */
+        .draft-option-card *, [class*="draft-option"] * {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
+        /* Assicura che i bottoni risaltino */
+        .draft-option-card button {
+            background: #ff9800 !important;
+            color: #ffffff !important;
+            font-weight: bold !important;
+            opacity: 1 !important;
+        }
+        /* Classi di utilità per i colori del calendario */
+        .lnp-text-win { color: #28a745 !important; font-weight: bold !important; }
+        .lnp-text-loss { color: #dc3545 !important; font-weight: bold !important; }
+        .lnp-text-pending { color: #aaaaaa !important; }
+    `;
+    document.head.appendChild(style);
+})();
+
+// ==========================================
+// 2. VARIABILI DI STATO GLOBALI
 // ==========================================
 const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
 const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
@@ -3281,7 +3320,7 @@ let playoffBracket = {};
 let currentPlayoffRound = ""; 
 
 // ==========================================
-// 2. INIZIALIZZAZIONE DATI & CALENDARIO
+// 3. INIZIALIZZAZIONE DATI & CALENDARIO
 // ==========================================
 function initChampionshipData() {
     standings = {};
@@ -3338,7 +3377,7 @@ function generatePerfectSchedule() {
 }
 
 // ==========================================
-// 3. INTERFACCIA DRAFT INIZIALE CORRETTA (ALTO CONTRASTO)
+// 4. INTERFACCIA DRAFT INIZIALE AGGIORNATA
 // ==========================================
 function updateCourtPreview() {
     const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
@@ -3406,27 +3445,25 @@ function renderDraftRound() {
 
     choices.forEach(player => {
         const card = document.createElement('div');
-        card.className = 'draft-option-card';
-        // Sovrascriviamo lo stile sbiadito: sfondo blu scuro solido, opacità massima e testi forzati su bianco/oro
-        card.style.cssText = "background:#0f2439 !important; opacity:1 !important; filter:none !important; border:2px solid #1e3d59 !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.5) !important; color:#ffffff !important; margin: 5px !important; display:block !important;";
+        card.className = 'draft-option-card'; // Subisce l'effetto del CSS iniettato in alto
         const safeString = encodeURIComponent(JSON.stringify(player));
         
         card.innerHTML = `
-            <div style="margin-bottom:8px; color:#ffffff !important; opacity:1 !important;">
-                <div style="color:#ff9800 !important; font-size:1.15rem !important; font-weight:bold !important; opacity:1 !important;">${player.cognome}</div>
-                <div style="font-size:0.8rem !important; color:#cbd5e0 !important; font-weight:500 !important; opacity:1 !important;">${player.club}</div>
+            <div style="margin-bottom:8px;">
+                <div style="color:#ff9800 !important; font-size:1.2rem !important; font-weight:bold !important;">${player.cognome}</div>
+                <div style="font-size:0.85rem !important; color:#cbd5e0 !important; font-weight:500;">${player.club}</div>
             </div>
-            <table style="width:100% !important; margin-bottom:12px !important; border-collapse:collapse !important; background:rgba(255,255,255,0.07) !important; border-radius:4px !important; font-size:0.85rem !important; color:#ffffff !important; opacity:1 !important;">
+            <table style="width:100% !important; margin-bottom:12px !important; border-collapse:collapse !important; background:rgba(255,255,255,0.08) !important; border-radius:4px !important; font-size:0.85rem !important;">
                 <tr>
-                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold; color:#ffffff !important;">PTS: <span style="color:#ffc107 !important;">${player.ppg || 0}</span></td>
-                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold; color:#ffffff !important;">AST: <span style="color:#ffc107 !important;">${player.apg || 0}</span></td>
+                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">PTS: <span style="color:#ffc107 !important;">${player.ppg || 0}</span></td>
+                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">AST: <span style="color:#ffc107 !important;">${player.apg || 0}</span></td>
                 </tr>
                 <tr>
-                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold; color:#ffffff !important;">REB: <span style="color:#ffc107 !important;">${player.rpg || 0}</span></td>
-                    <td style="padding:5px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold; color:#ffffff !important;">STL: <span style="color:#ffc107 !important;">${player.spg || 0}</span></td>
+                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">REB: <span style="color:#ffc107 !important;">${player.rpg || 0}</span></td>
+                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">STL: <span style="color:#ffc107 !important;">${player.spg || 0}</span></td>
                 </tr>
             </table>
-            <button style="background:#ff9800 !important; color:#ffffff !important; border:none !important; padding:9px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important; text-transform:uppercase; font-size:0.85rem !important; opacity:1 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
+            <button style="background:#ff9800 !important; color:#ffffff !important; border:none !important; padding:10px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important; text-transform:uppercase; font-size:0.85rem !important;" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
         `;
         container.appendChild(card);
     });
@@ -3450,7 +3487,7 @@ function pickPlayer(role, encodedData) {
 }
 
 // ==========================================
-// 4. CALENDARIO CON LOGICA COLORI CORRETTA (CASA/TRASFERTA)
+// 4. FIX COLORI CALENDARIO BLINDATO (MATEMATICO)
 // ==========================================
 function renderCalendarAndStandings() {
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
@@ -3485,30 +3522,30 @@ function renderCalendarAndStandings() {
         const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
         let resText = myMatch.score || 'Da giocare';
         
-        let statusColor = "#aaaaaa"; 
+        let cssClass = "lnp-text-pending"; 
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
             let homeScore = parseInt(scores[0]);
             let awayScore = parseInt(scores[1]);
             
-            // LOGICA INTELLIGENTE: Verifica se "La Tua Squadra" gioca in casa o fuori
+            // Logica infallibile: estrae e confronta i punteggi in base a chi gioca in casa
             if (myMatch.home === "La Tua Squadra") {
-                statusColor = homeScore > awayScore ? "#28a745" : "#dc3545"; // Verde se vinci in casa, rosso se perdi
+                cssClass = (homeScore > awayScore) ? "lnp-text-win" : "lnp-text-loss";
             } else {
-                statusColor = awayScore > homeScore ? "#28a745" : "#dc3545"; // Verde se vinci fuori, rosso se perdi fuori
+                cssClass = (awayScore > homeScore) ? "lnp-text-win" : "lnp-text-loss";
             }
         }
 
         html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
             <div><strong>Gara ${giornata.round}:</strong> VS ${vsTeam}</div>
-            <div style="font-weight: bold !important; color: ${statusColor} !important;">${resText}</div>
+            <div class="${cssClass}">${resText}</div>
         </div>`;
     });
     html += `</div>`;
 
     container.innerHTML = html;
 
-    // Aggiorna dinamicamente la riga del record in alto a destra (es. "3 - 2")
+    // Aggiornamento contatore statico in alto a destra "Vinte - Perse"
     const allDivs = document.querySelectorAll('div');
     for (let d of allDivs) {
         if (d.innerText.trim().match(/^\d+\s*-\s*\d+$/)) {
@@ -3776,7 +3813,6 @@ function executeNextSubDraft() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
-        card.style.cssText = "background:#0f2439 !important; opacity:1 !important; filter:none !important; border:2px solid #1e3d59 !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.4) !important; color:#ffffff !important; margin:5px !important; display:block !important;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         
         card.innerHTML = `
@@ -3819,7 +3855,7 @@ window.insertNewPlayer = function(slotIndex, encodedData) {
 }
 
 // ==========================================
-// 8. ACCOPPIAMENTI PLAYOFF BLINDATI
+// 8. STRUTTURA E CONTROLLO TABELLONE PLAYOFF
 // ==========================================
 function buildPlayoffBrackets() {
     let sorted = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
@@ -4000,6 +4036,7 @@ function closeBoxscore() {
     updateMatchBanner();
 }
 window.closeBoxscore = closeBoxscore;
+
 
    
 
