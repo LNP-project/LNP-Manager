@@ -3307,6 +3307,9 @@
         .lnp-text-pending { 
             color: #aaaaaa !important; 
         }
+        /* Forza il contatore del pannello ad essere visibile e della dimensione giusta */
+#lnp-counter-vittorie { color: #28a745 !important; font-weight: bold !important; }
+#lnp-counter-sconfitte { color: #dc3545 !important; font-weight: bold !important; }
     `;
     document.head.appendChild(style);
 })();
@@ -3571,35 +3574,37 @@ function renderCalendarAndStandings() {
     // Rianimiamo il box iniettando tutto l'HTML generato
     container.innerHTML = html;
 
-    // 3. AGGIORNAMENTO DEL CONTATORE VINTE-PERSE IN ALTO A DESTRA
-    // ... [Taglia qui dopo la riga container.innerHTML = html;]
+    
 
     // ==========================================
     // 3. AGGIORNAMENTO AGGRESSIVO DEL CONTATORE "PANNELLO SQUADRA"
     // ==========================================
     
     // Tentativo 1: Selettore chirurgico basato sulla struttura del Pannello Squadra
-    const pannelloSquadra = Array.from(document.querySelectorAll('div, h3, h4, .panel-title'))
-        .find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
-
-    if (pannelloSquadra && pannelloSquadra.parentNode) {
-        // Cerca il primo elemento utile che contiene il pattern del punteggio (es. "0 - 0" o "2 - 1") sotto lo stesso blocco
-        const counterEl = Array.from(pannelloSquadra.parentNode.querySelectorAll('div, span, p'))
-            .find(el => el.innerText && el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/));
+    // ==========================================
+    // 3. AGGIORNAMENTO DEL CONTATORE PANNELLO SQUADRA (VERSIONE NUMERO CERCASI)
+    // ==========================================
+    
+    // Se abbiamo già battezzato gli elementi nei turni precedenti, li aggiorna all'istante
+    const winEl = document.getElementById('lnp-counter-vittorie');
+    const lossEl = document.getElementById('lnp-counter-sconfitte');
+    
+    if (winEl && lossEl) {
+        winEl.innerText = userWins;
+        lossEl.innerText = userLosses;
+    } else {
+        // Altrimenti, cerca il blocco sotto "PANNELLO SQUADRA" per la prima volta
+        const headers = Array.from(document.querySelectorAll('div, h2, h3, h4, th, .panel-title'));
+        const panelHeader = headers.find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
         
-        if (counterEl) {
-            counterEl.innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
-        }
-    }
-
-    // Tentativo 2 (Fallback): Scansione atomica globale nel caso in cui le classi dinamiche cambino
-    const allDivs = document.querySelectorAll('div, h2, h3, p, span');
-    for (let d of allDivs) {
-        if (d.children.length <= 2 && d.innerText && d.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/)) {
-            // Evita di sovrascrivere i testi dei punteggi del diario di bordo appena generati
-            if (!d.classList.contains('lnp-text-win') && !d.classList.contains('lnp-text-loss') && !d.classList.contains('lnp-text-pending')) {
-                d.innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
-                break;
+        if (panelHeader && panelHeader.parentNode) {
+            // Cerca il testo del punteggio tipo 0-0, 1-0, ecc. nel raggio del box
+            const target = Array.from(panelHeader.parentNode.querySelectorAll('div, p, span'))
+                .find(el => el.innerText && el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/));
+            
+            if (target) {
+                // Ricostruisce la struttura inserendo ID statici per i turni successivi
+                target.innerHTML = `<span id="lnp-counter-vittorie">${userWins}</span> - <span id="lnp-counter-sconfitte">${userLosses}</span>`;
             }
         }
     }
