@@ -3255,6 +3255,7 @@
             
         ];
 // --- VARIABILI DI STATO GLOBALI ---
+ // --- VARIABILI DI STATO GLOBALI ---
 const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
 const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
 
@@ -3329,7 +3330,6 @@ function generatePerfectSchedule() {
 
 // --- RENDERING INTEGRATO NELLA TUA COLONNA DESTRA ---
 function renderCalendarAndStandings() {
-    // Cerchiamo il box nativo del tuo screenshot (Calendario Stagione)
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
     if (!container) return;
 
@@ -3338,23 +3338,23 @@ function renderCalendarAndStandings() {
 
     let html = "";
 
-    // 1. Mini Classifica Live in cima al Calendario per non occupare spazio extra
-    html += `<div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="font-weight: bold; color: #ff9800; font-size: 0.85rem; margin-bottom: 4px;">🏆 CLASSIFICA LIVE (Tua Posizione: #${myPos})</div>
+    // 1. Mini Classifica Live
+    html += `<div style="background: rgba(255,255,255,0.08) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.15);">
+        <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Tua Posizione: #${myPos})</div>
         <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
     
     sortedTeams.forEach((team, idx) => {
         let isMe = team.teamName === "La Tua Squadra";
-        let color = isMe ? "#ff9800" : "#fff";
-        html += `<div style="display:flex; justify-content:space-between; padding: 2px 0; color: ${color}; font-weight: ${isMe ? 'bold':'normal'}">
+        let color = isMe ? "#ff9800" : "#ffffff";
+        html += `<div style="display:flex; justify-content:space-between; padding: 3px 0; color: ${color} !important; font-weight: ${isMe ? 'bold':'normal'} !important;">
             <span>${idx+1}. ${team.teamName}</span>
             <span>${team.points} pt (${team.wins}-${team.losses})</span>
         </div>`;
     });
     html += `</div></div>`;
 
-    // 2. Elenco delle Partite del Calendario con i risultati della CPU
-    html += `<div style="font-weight: bold; color: #fff; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO:</div>`;
+    // 2. Diario di bordo e Calendario
+    html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
     html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
     
     fullLeagueSchedule.forEach(giornata => {
@@ -3362,7 +3362,7 @@ function renderCalendarAndStandings() {
         const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
         let resText = myMatch.score || 'Da giocare';
         
-        let statusColor = "#ccc";
+        let statusColor = "#cccccc";
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
             let homeScore = parseInt(scores[0]);
@@ -3374,9 +3374,9 @@ function renderCalendarAndStandings() {
             }
         }
 
-        html += `<div style="padding: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+        html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
             <div><strong>Gara ${giornata.round}:</strong> VS ${vsTeam}</div>
-            <div style="font-weight: bold; color: ${statusColor};">${resText}</div>
+            <div style="font-weight: bold !important; color: ${statusColor} !important;">${resText}</div>
         </div>`;
     });
     html += `</div>`;
@@ -3419,9 +3419,8 @@ function simulateCPUMatches(currentRound) {
     });
 }
 
-// --- CORREZIONE DEL BLOCCO MERCATO (GIORNATA 19 -> 20) ---
+// --- DRAFT DI RIPARAZIONE (GIORNATA 19 -> 20) ---
 window.startMidSeasonMarket = function() {
-    // Chiude il viewport live per mostrare il draft
     document.getElementById('main-game-viewport').classList.remove('game-mode');
     
     const container = document.getElementById('draft-options-container');
@@ -3437,14 +3436,13 @@ window.startMidSeasonMarket = function() {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
         card.id = `cut-card-${slotIndex}`;
-        // Style ad alta luminosità e contrasto per evitare l'effetto scuro/opaco
-        card.style = "background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:15px; text-align:center; color:#111111 !important; box-shadow:0 4px 8px rgba(0,0,0,0.2);";
+        card.style = "background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:15px; text-align:center; color:#111111 !important; box-shadow:0 4px 8px rgba(0,0,0,0.2); margin: 5px;";
         card.innerHTML = `
-            <div style="color:#111 !important;">
-                <div style="font-weight:bold; font-size:1.1rem; color:#1a365d !important; margin-bottom:4px;">${player.cognome}</div>
-                <div style="font-size:0.8rem; color:#4a5568 !important; margin-bottom:10px;">${orderRoles[slotIndex]} (${player.club})</div>
+            <div style="color:#111111 !important; opacity:1 !important;">
+                <div style="font-weight:bold !important; font-size:1.1rem; color:#1a365d !important; margin-bottom:4px; opacity:1 !important;">${player.cognome}</div>
+                <div style="font-size:0.8rem; color:#4a5568 !important; margin-bottom:10px; opacity:1 !important;">${orderRoles[slotIndex]} (${player.club})</div>
             </div>
-            <button style="background:#e53e3e; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold; font-size:0.85rem;" onclick="toggleCutPlayer(${slotIndex})">Taglia Giocatore</button>
+            <button style="background:#e53e3e; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;" onclick="toggleCutPlayer(${slotIndex})">Taglia</button>
         `;
         container.appendChild(card);
     });
@@ -3461,22 +3459,20 @@ window.toggleCutPlayer = function(slotIndex) {
     const card = document.getElementById(`cut-card-${slotIndex}`);
     if (idx > -1) {
         playersToCut.splice(idx, 1);
-        card.style.background = "#ffffff";
-        card.style.border = "none";
+        card.style.setAttribute('style', 'background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:15px; text-align:center; color:#111111 !important; box-shadow:0 4px 8px rgba(0,0,0,0.2); margin: 5px;');
     } else {
         if (playersToCut.length >= 2) {
             alert("Puoi tagliare al massimo 2 giocatori!");
             return;
         }
         playersToCut.push(slotIndex);
-        card.style.background = "#fed7d7";
-        card.style.border = "2px solid #e53e3e";
+        card.style.setAttribute('style', 'background:#fed7d7 !important; opacity:1 !important; border:2px solid #e53e3e !important; border-radius:8px; padding:15px; text-align:center; color:#111111 !important; box-shadow:0 4px 8px rgba(0,0,0,0.2); margin: 5px;');
     }
 }
 
 function processCutsAndRedraft() {
     if (playersToCut.length === 0) {
-        alert("Nessun cambio effettuato! Mantieni il quintetto base.");
+        alert("Nessun cambio effettuato!");
         document.getElementById('draft-panel').style.opacity = "0";
         document.getElementById('draft-panel').style.pointerEvents = "none";
         closeBoxscore();
@@ -3493,7 +3489,6 @@ function executeNextSubDraft() {
         setTimeout(() => {
             document.getElementById('draft-panel').style.opacity = "0";
             document.getElementById('draft-panel').style.pointerEvents = "none";
-            // Sblocca la UI e aggiorna il banner di gioco principale per evitare il congelamento
             closeBoxscore();
         }, 1200);
         return;
@@ -3513,15 +3508,14 @@ function executeNextSubDraft() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
-        // Overwrite completo degli stili CSS per forzarlo chiaro e leggibile con le stats richieste
-        card.style = "background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:12px; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.15); color:#111111 !important;";
+        card.style = "background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:12px; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.15); color:#111111 !important; margin:5px;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         card.innerHTML = `
-            <div style="color:#111 !important;">
-                <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
-                <div style="font-size:0.75rem; color:#4a5568 !important; margin-bottom:6px;">${player.club}</div>
+            <div style="color:#111111 !important; opacity:1 !important;">
+                <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold; opacity:1 !important;">${player.cognome}</div>
+                <div style="font-size:0.75rem; color:#4a5568 !important; margin-bottom:6px; opacity:1 !important;">${player.club}</div>
             </div>
-            <div style="font-size:0.8rem; margin-bottom:10px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f7fafc; padding:6px; border-radius:4px; color:#2d3748 !important; font-weight:bold;">
+            <div style="font-size:0.8rem; margin-bottom:10px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f7fafc !important; padding:6px; border-radius:4px; color:#2d3748 !important; font-weight:bold !important; opacity:1 !important;">
                 <span>PTS: ${player.ppg || 0}</span><span>AST: ${player.apg || 0}</span>
                 <span>REB: ${player.rpg || 0}</span><span>STL: ${player.spg || 0}</span>
             </div>
@@ -3545,12 +3539,11 @@ window.insertNewPlayer = function(slotIndex, encodedData) {
         `;
     }
 
-    // RIMUOVE l'elemento appena completato così la coda avanza e sblocca il gioco!
     playersToCut.shift(); 
     executeNextSubDraft();
 }
 
-// --- LOGICA DRAFT INIZIALE CORRETTA ---
+// --- LOGICA DRAFT INIZIALE ---
 function updateCourtPreview() {
     const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
     if (!selectElem) return;
@@ -3618,14 +3611,14 @@ function renderDraftRound() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
-        card.style = "background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:12px; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.15); color:#111111 !important;";
+        card.style = "background:#ffffff !important; opacity:1 !important; border-radius:8px; padding:12px; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.15); color:#111111 !important; margin: 5px;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         card.innerHTML = `
-            <div style="color:#111 !important;">
-                <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
-                <div style="font-size:0.75rem; color:#4a5568 !important; margin-bottom:6px;">${player.club}</div>
+            <div style="color:#111111 !important; opacity:1 !important;">
+                <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold; opacity:1 !important;">${player.cognome}</div>
+                <div style="font-size:0.75rem; color:#4a5568 !important; margin-bottom:6px; opacity:1 !important;">${player.club}</div>
             </div>
-            <div style="font-size:0.8rem; margin-bottom:10px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f7fafc; padding:6px; border-radius:4px; color:#2d3748 !important; font-weight:bold;">
+            <div style="font-size:0.8rem; margin-bottom:10px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f7fafc !important; padding:6px; border-radius:4px; color:#2d3748 !important; font-weight:bold !important; opacity:1 !important;">
                 <span>PTS: ${player.ppg || 0}</span><span>AST: ${player.apg || 0}</span>
                 <span>REB: ${player.rpg || 0}</span><span>STL: ${player.spg || 0}</span>
             </div>
@@ -3678,7 +3671,7 @@ function closeBoxscore() {
 }
 window.closeBoxscore = closeBoxscore;
 
-// --- SIMULATORE MATCH CORRETTO ---
+// --- SIMULATORE MATCH COMPLETAMENTE ISOLATO ---
 function simMatch() {
     if (currentMatchNumber > 38) return;
 
@@ -3725,7 +3718,6 @@ function simMatch() {
 
     if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
 
-    // Generazione Statistiche MVP Complete (Punti, Rimbalzi, Assist, Recuperi)
     let topScorer = playersArray[Math.floor(Math.random() * playersArray.length)];
     let mvpPts = Math.round((topScorer.ppg || 12) * (0.8 + Math.random() * 0.6) + (finalUserScore * 0.03));
     let mvpAst = Math.round((topScorer.apg || 3) * (0.6 + Math.random() * 0.8));
@@ -3744,7 +3736,7 @@ function simMatch() {
         if(ticker) ticker.innerText = `LIVE GARA ${currentMatchNumber}: La Tua Squadra ${currentLiveUser} - ${currentLiveOpp} ${opponentName}`;
 
         if (currentStep >= totalSteps) {
-            clearInterval(interval);
+            clearInterval(interval); // BLOCCO RILASCIATO SICURAMENTE QUI
             
             myMatch.score = `${finalUserScore} - ${finalOppScore}`;
             myMatch.simulated = true;
@@ -3759,20 +3751,17 @@ function simMatch() {
                 standings["La Tua Squadra"].losses++;
             }
 
-            // Aggiorna il contatore grafico nativo "PANNELLO SQUADRA" del tuo screenshot
-            const scoreHeader = document.querySelector('.panel-team div[style*="font-size: 2rem"]') || document.getElementById('user-wins-counter')?.parentNode || document.querySelector('.score-counter') || document.querySelector('div style="font-size:2rem"');
-            let scoreBoxes = document.querySelectorAll('div');
-            scoreBoxes.forEach(b => {
-                if(b.innerText === "0 - 0" || b.innerText === `${userWins-1} - ${userLosses}` || b.innerText === `${userWins} - ${userLosses-1}`) {
-                    b.innerText = `${userWins} - ${userLosses}`;
-                    b.style.color = "#ff9800";
-                    b.style.fontWeight = "bold";
+            // AGGIORNAMENTO DIRETTO E SICURO DELLE VITTORIE-SCONFITTE NELLO SCREENSHOT
+            const panelTeamDivs = document.querySelectorAll('div');
+            for (let div of panelTeamDivs) {
+                if (div.innerText.trim().match(/^\d+\s*-\s*\d+$/)) {
+                    div.innerHTML = `<span style="color:#38a169;">${userWins}</span> - <span style="color:#e53e3e;">${userLosses}</span>`;
+                    break;
                 }
-            });
+            }
 
             simulateCPUMatches(currentMatchNumber);
 
-            // Gestione dei Bottoni finali di Gara 19 (Mercato) e Gara 38 (Fine)
             if (currentMatchNumber === 19) {
                 if(banner) {
                     banner.innerHTML = `
@@ -3810,8 +3799,6 @@ function simMatch() {
     }, 120);
 }
 window.simMatch = simMatch;
-         // Fine dell'array all'Players
-// --- VARIABILI DI STATO GLOBALI ---
                
    
 
@@ -3820,5 +3807,3 @@ window.simMatch = simMatch;
 </html>
 
 
-// --- VARIABILI DI STATO GLOBALI ---
-// --- VARIABILI DI STATO GLOBALI ---
