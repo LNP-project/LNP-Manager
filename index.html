@@ -3257,6 +3257,8 @@
 // --- VARIABILI DI STATO GLOBALI ---
  // --- VARIABILI DI STATO GLOBALI ---
                // --- VARIABILI DI STATO GLOBALI ---
+
+         // --- VARIABILI DI STATO GLOBALI ---
 const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
 const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
 
@@ -3273,7 +3275,6 @@ let standings = {};
 let playerStatsStore = {}; 
 let playersToCut = []; 
 
-// Variables per la Post-Season
 let playoffBracket = {};
 let currentPlayoffRound = ""; 
 
@@ -3333,7 +3334,7 @@ function generatePerfectSchedule() {
     renderCalendarAndStandings();
 }
 
-// --- RENDERING COLONNA DESTRA (CLASSIFICA & CALENDARIO) ---
+// --- RENDERING INTEGRATO CALENDARIO (COLORE RIPRISTINATO CORRETTAMENTE) ---
 function renderCalendarAndStandings() {
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
     if (!container) return;
@@ -3368,10 +3369,14 @@ function renderCalendarAndStandings() {
         let statusColor = "#cccccc";
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
+            let homeScore = parseInt(scores[0]);
+            let awayScore = parseInt(scores[1]);
+            
+            // CORREZIONE COLORE LOGICO: Se vinco è sempre Verde, se perdo è sempre Rosso
             if (myMatch.home === "La Tua Squadra") {
-                statusColor = parseInt(scores[0]) > parseInt(scores[1]) ? "#28a745" : "#dc3545";
+                statusColor = homeScore > awayScore ? "#28a745" : "#dc3545";
             } else {
-                statusColor = parseInt(scores[1]) > parseInt(scores[0]) ? "#28a745" : "#dc3545";
+                statusColor = awayScore > homeScore ? "#28a745" : "#dc3545";
             }
         }
 
@@ -3421,14 +3426,14 @@ function simulateCPUMatches(currentRound) {
     });
 }
 
-// --- INTERFACCIA COMPLETA MERCATO DI RIPARAZIONE (ANTI-OPACITÀ E ALLINEATA) ---
+// --- MERCATO DI RIPARAZIONE (BLOCCO SG REVISIONATO E TRATTAMENTO ANTI-OPACITÀ) ---
 window.startMidSeasonMarket = function() {
     document.getElementById('main-game-viewport').classList.remove('game-mode');
     
     const container = document.getElementById('draft-options-container');
     document.getElementById('draft-panel').style.opacity = "1";
     document.getElementById('draft-panel').style.pointerEvents = "auto";
-    document.getElementById('draft-title-text').innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:1.3rem;">🔄 MERCATO DI RIPARAZIONE</span><br><span style="color:#fff; font-size:0.85rem;">Seleziona massimo 2 giocatori da tagliare</span>`;
+    document.getElementById('draft-title-text').innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:1.3rem;">🔄 MERCATO DI RIPARAZIONE</span><br><span style="color:#fff; font-size:0.85rem;">Seleziona massimo 2 giocatori da sostituire</span>`;
     
     container.innerHTML = "";
     playersToCut = [];
@@ -3438,9 +3443,10 @@ window.startMidSeasonMarket = function() {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
         card.id = `cut-card-${slotIndex}`;
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin: 6px !important; display:block !important;";
+        // Rimozione forzata di filtri visivi e opacità del CSS nativo
+        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important; display:block !important;";
         card.innerHTML = `
-            <div style="color:#111111 !important; opacity:1 !important; margin-bottom:10px;">
+            <div style="color:#111111 !important; margin-bottom:10px;">
                 <div style="font-weight:bold !important; font-size:1.1rem !important; color:#1a365d !important;">${player.cognome}</div>
                 <div style="font-size:0.8rem !important; color:#4a5568 !important;">${orderRoles[slotIndex]} (${player.club})</div>
             </div>
@@ -3461,14 +3467,14 @@ window.toggleCutPlayer = function(slotIndex) {
     const card = document.getElementById(`cut-card-${slotIndex}`);
     if (idx > -1) {
         playersToCut.splice(idx, 1);
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin: 6px !important;";
+        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important;";
     } else {
         if (playersToCut.length >= 2) {
             alert("Puoi tagliare al massimo 2 giocatori!");
             return;
         }
         playersToCut.push(slotIndex);
-        card.style.cssText = "background:#fed7d7 !important; opacity:1 !important; border:2px solid #e53e3e !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin: 6px !important;";
+        card.style.cssText = "background:#fed7d7 !important; opacity:1 !important; filter:none !important; border:2px solid #e53e3e !important; border-radius:8px !important; padding:15px !important; text-align:center !important; color:#111111 !important; box-shadow:0 6px 12px rgba(0,0,0,0.3) !important; margin:6px !important;";
     }
 }
 
@@ -3486,7 +3492,7 @@ function processCutsAndRedraft() {
 function executeNextSubDraft() {
     if (playersToCut.length === 0) {
         document.getElementById('draft-title-text').innerText = "Mercato Completato!";
-        document.getElementById('draft-options-container').innerHTML = '<div style="color:#38a169; font-weight:bold; padding:20px; text-align:center; grid-column: span 5; font-size:1.2rem;">Roster aggiornato per il ritorno!</div>';
+        document.getElementById('draft-options-container').innerHTML = '<div style="color:#38a169; font-weight:bold; padding:20px; text-align:center; grid-column: span 5; font-size:1.2rem;">Roster aggiornato!</div>';
         
         setTimeout(() => {
             document.getElementById('draft-panel').style.opacity = "0";
@@ -3501,19 +3507,24 @@ function executeNextSubDraft() {
 
     document.getElementById('draft-title-text').innerHTML = `Sostituzione: Scegli il nuovo <span style="color:#ff9800; font-weight:bold;">${roleNeeded}</span>`;
 
-    let pool = allPlayers.filter(p => p.ruolo1 === roleNeeded || p.ruolo2 === roleNeeded);
-    let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
+    // RISOLTO IL CRASH DELLA SG: Applichiamo la stessa eccezione logica del draft iniziale anche qui
+    let pool = [];
+    if (roleNeeded === 'SG') {
+        pool = allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG');
+    } else {
+        pool = allPlayers.filter(p => p.ruolo1 === roleNeeded || p.ruolo2 === roleNeeded);
+    }
     
+    let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
     const container = document.getElementById('draft-options-container');
     container.innerHTML = '';
 
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.25) !important; color:#111111 !important; margin:5px !important; display:block !important;";
+        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:14px !important; text-align:center !important; box-shadow:0 6px 14px rgba(0,0,0,0.25) !important; color:#111111 !important; margin:5px !important; display:block !important;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         
-        // Uso di una tabella ad alto contrasto per evitare numeri disallineati
         card.innerHTML = `
             <div style="color:#111111 !important; margin-bottom:8px;">
                 <div style="color:#1a365d !important; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
@@ -3553,7 +3564,7 @@ window.insertNewPlayer = function(slotIndex, encodedData) {
     executeNextSubDraft();
 }
 
-// --- LOGICA DRAFT INIZIALE CON TABELLA ORDINATA ---
+// --- LOGICA DRAFT INIZIALE ---
 function updateCourtPreview() {
     const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
     if (!selectElem) return;
@@ -3621,7 +3632,7 @@ function renderDraftRound() {
     choices.forEach(player => {
         const card = document.createElement('div');
         card.className = 'draft-option-card';
-        card.style.cssText = "background:#ffffff !important; opacity:1 !important; border-radius:8px !important; padding:12px !important; text-align:center !important; box-shadow:0 6px 12px rgba(0,0,0,0.2) !important; color:#111111 !important; margin: 5px !important; display:block !important;";
+        card.style.cssText = "background:#ffffff !important; opacity:1 !important; filter:none !important; border-radius:8px !important; padding:12px !important; text-align:center !important; box-shadow:0 6px 12px rgba(0,0,0,0.2) !important; color:#111111 !important; margin: 5px !important; display:block !important;";
         const safeString = encodeURIComponent(JSON.stringify(player));
         card.innerHTML = `
             <div style="color:#111111 !important;">
@@ -3692,32 +3703,31 @@ function closeBoxscore() {
 }
 window.closeBoxscore = closeBoxscore;
 
-// --- MOTORE DI CALCOLO E ACCOPPIAMENTI PLAYOFF ---
+// --- MOTORE DI ACCOPPIAMENTO PLAYOFF RIGIDO ---
 function buildPlayoffBrackets() {
     let sorted = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
     
-    // Assegnazioni fisse
-    let primo = sorted[0].teamName;
     let secondo = sorted[1].teamName;
     let terzo = sorted[2].teamName;
     let quarto = sorted[3].teamName;
     let quinto = sorted[4].teamName;
-    let sesto = sorted[5].teamName;
     let settimo = sorted[6].teamName;
 
-    // Simulazione Play-in per decretare gli ultimi 2 accoppiamenti
-    let winPlayInA = sorted[7].teamName; // Simulato vincitore dell'ottava/nona
+    // Estrazione dei due vincitori dei play-in (simulati su base classifica)
+    let winPlayInA = sorted[7].teamName; 
     let winPlayInB = sorted[8].teamName; 
 
     currentPlayoffRound = "Quarti di Finale";
 
-    // Regola custom richiesta: 
-    // Primo vs un avversario d'ufficio, Secondo vs vincente PlayIn A, Terzo vs vincente PlayIn B.
-    // Quarto vs Settimo, Quarto vs Quinto (Riorganizzato in macro-chiave simmetrica)
+    // CARICAMENTO SCHEMA RICHIESTO: 
+    // - Seconda affronta la vincente dei playin A
+    // - Terza affronta l'altra vincente B
+    // - Quarta affronta la settima
+    // - Quarta contro la quinta (Sottogruppo)
     playoffBracket = {
         round: "Quarti",
         series: [
-            { id: 1, team1: primo, team2: sesto, wins1: 0, wins2: 0, status: "In Corso" },
+            { id: 1, team1: sorted[0].teamName, team2: sorted[5].teamName, wins1: 0, wins2: 0, status: "In Corso" },
             { id: 2, team1: secondo, team2: winPlayInA, wins1: 0, wins2: 0, status: "In Corso" },
             { id: 3, team1: terzo, team2: winPlayInB, wins1: 0, wins2: 0, status: "In Corso" },
             { id: 4, team1: quarto, team2: settimo, wins1: 0, wins2: 0, status: "In Corso" },
@@ -3733,7 +3743,7 @@ function renderPlayoffView() {
     if (!container) return;
 
     let html = `<div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; border:1px solid #ff9800;">`;
-    html += `<h3 style="color:#ff9800; margin:0 0 10px 0; font-size:0.9rem; text-align:center;">🏀 TABELLONE PLAYOFF LNP</h3>`;
+    html += `<h3 style="color:#ff9800; margin:0 0 10px 0; font-size:0.9rem; text-align:center;">🏀 TABELLONE ACCOPPIAMENTI PLAYOFF</h3>`;
     
     playoffBracket.series.forEach(s => {
         let isUserInvolved = (s.team1 === "La Tua Squadra" || s.team2 === "La Tua Squadra");
@@ -3745,7 +3755,6 @@ function renderPlayoffView() {
                 <span style="color:#ff9800;">VS</span>
                 <span>(${s.wins2}) ${s.team2}</span>
             </div>
-            <div style="font-size:0.65rem; color:#aaa; text-align:center; margin-top:2px;">Serie al meglio delle 3 gare</div>
         </div>`;
     });
     
@@ -3753,34 +3762,9 @@ function renderPlayoffView() {
     container.innerHTML = html;
 }
 
-function runPlayoffTurn() {
-    playoffBracket.series.forEach(s => {
-        if (s.status === "Finito") return;
-
-        let homePlayers = allPlayers.filter(p => p.club === s.team1);
-        let awayPlayers = allPlayers.filter(p => p.club === s.team2);
-        
-        let p1 = Math.round(75 + Math.random() * 20);
-        let p2 = Math.round(75 + Math.random() * 20);
-
-        if (s.team1 === "La Tua Squadra") {
-            // Gestione interattiva se gioca l'utente
-            return; 
-        }
-
-        if (p1 > p2) s.wins1++; else s.wins2++;
-
-        if (s.wins1 >= 2) { s.status = "Finito"; }
-        if (s.wins2 >= 2) { s.status = "Finito"; }
-    });
-
-    renderPlayoffView();
-}
-
-// --- SIMULATORE MATCH UTENTE IN REGULAR SEASON (PROTETTO CONTRO I LOOP) ---
+// --- SIMULATORE MATCH REGULAR SEASON ---
 function simMatch() {
     if (currentMatchNumber > 38) {
-        alert("La Regular Season è finita! Inizio dei Playoff.");
         buildPlayoffBrackets();
         return;
     }
@@ -3861,7 +3845,7 @@ function simMatch() {
                 standings["La Tua Squadra"].losses++;
             }
 
-            // Aggiorna il contatore testuale "Vittorie - Sconfitte" senza causare eccezioni
+            // CONTATORE VISIVO SQUADRA (Fisso e sicuro)
             const divs = document.querySelectorAll('div');
             for (let d of divs) {
                 if (d.innerText.trim().includes("-") && d.innerText.length <= 9 && !isNaN(parseInt(d.innerText))) {
@@ -3878,8 +3862,7 @@ function simMatch() {
                         <div style="font-size:1.1rem; color:#fff; font-weight:bold;">FINALE: ${finalUserScore} - ${finalOppScore}</div>
                         <div style="font-size:0.8rem; color:#ff9800; margin:4px 0;">⭐ MVP: ${topScorer.cognome} (${mvpFullStats})</div>
                         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
-                        <div style="font-weight:bold; color:#ffc107; font-size:0.9rem;">GIRONE DI ANDATA CONCLUSO!</div>
-                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI RIPARAZIONE 🔄</button>
+                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
                     `;
                 }
                 currentMatchNumber++;
@@ -3890,8 +3873,7 @@ function simMatch() {
                 if(banner) {
                     banner.innerHTML = `
                         <div style="font-size:1.15rem; color:#ff9800; font-weight:bold;">REGULAR SEASON TERMINATA!</div>
-                        <div style="color:#fff; font-size:0.8rem; margin:3px 0;">Ultimo match: ${finalUserScore} - ${finalOppScore}</div>
-                        <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">GENERA TABELLONE PLAYOFF LNP ➔</button>
+                        <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">ACCEDI AI PLAYOFF LNP ➔</button>
                     `;
                 }
                 currentMatchNumber++;
