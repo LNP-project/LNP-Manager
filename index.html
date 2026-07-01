@@ -3500,17 +3500,16 @@ function pickPlayer(role, encodedData) {
     renderDraftRound();
 }
 
-// ==========================================
-// 4. FIX COLORI CALENDARIO BLINDATO (MATEMATICO)
-// ==========================================
-// ==========================================
-// 4. FIX COLORI CALENDARIO BLINDATO (MATEMATICO)
-// ==========================================
-// ==========================================
-// 4. FIX COLORI E TESTO CALENDARIO (DEFINITIVO)
+
+
+// 4. FIX COLORI E RIGENERAZIONE CONTENITORI (BLINDATO)
 // ==========================================
 function renderCalendarAndStandings() {
-    const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
+    // Cerca il container usando esattamente i tuoi tre selettori fallback originali
+    const container = document.getElementById('calendar-render-box') || 
+                      document.querySelector('.calendar-list') || 
+                      document.querySelector('.calendar-item')?.parentNode;
+    
     if (!container) return;
 
     let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
@@ -3518,7 +3517,7 @@ function renderCalendarAndStandings() {
 
     let html = "";
 
-    // 1. CLASSIFICA LIVE
+    // 1. GENERAZIONE CLASSIFICA LIVE
     html += `<div style="background: rgba(255,255,255,0.05) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
         <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
         <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
@@ -3533,11 +3532,11 @@ function renderCalendarAndStandings() {
     });
     html += `</div></div>`;
 
-    // 2. DIARIO DI BORDO
+    // 2. GENERAZIONE DIARIO DI BORDO
     html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
     html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
     
-   fullLeagueSchedule.forEach(giornata => {
+    fullLeagueSchedule.forEach(giornata => {
         const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
         if(!myMatch) return;
 
@@ -3547,17 +3546,13 @@ function renderCalendarAndStandings() {
 
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
-            let userScore = parseInt(scores[0]); 
-            let oppScore = parseInt(scores[1]);  
+            let userScore = parseInt(scores[0]); // Primo elemento = Sempre Utente
+            let oppScore = parseInt(scores[1]);  // Secondo elemento = Sempre CPU
             
-            // Logica matematica pura: se i tuoi punti sono maggiori, è SEMPRE classe win verde
-            if (userScore > oppScore) {
-                cssClass = "lnp-text-win";
-            } else {
-                cssClass = "lnp-text-loss";
-            }
+            // Logica matematica pura sul vincitore reale per assegnare la classe CSS
+            cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
 
-            // Testo invertito visivamente per i match fuori casa
+            // Costruisci il testo visivo mantenendo l'ordine standard Casa - Trasferta
             if (myMatch.home === "La Tua Squadra") {
                 resText = `${userScore} - ${oppScore}`;
             } else {
@@ -3565,13 +3560,18 @@ function renderCalendarAndStandings() {
             }
         }
 
+        // Output HTML pulito usando le classi CSS iniettate
         html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
             <div><strong>Gara ${giornata.round}:</strong> ${myMatch.home === "La Tua Squadra" ? "VS" : "@"} ${vsTeam}</div>
             <div class="${cssClass}" style="font-family: monospace; font-size: 0.9rem;">${resText}</div>
         </div>`;
     });
+    html += `</div>`;
 
-    // Aggiornamento contatore statico nel pannello squadra "Vinte - Perse"
+    // Rianimiamo il box iniettando tutto l'HTML generato
+    container.innerHTML = html;
+
+    // 3. AGGIORNAMENTO DEL CONTATORE VINTE-PERSE IN ALTO A DESTRA
     const allDivs = document.querySelectorAll('div, h2, p, span');
     for (let d of allDivs) {
         if (d.innerText.trim().match(/^\d+\s*-\s*\d+$/) && !d.classList.contains('p-name') && d.children.length <= 2) {
