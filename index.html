@@ -330,8 +330,14 @@
             margin-bottom: 10px;
         }
 
-        .record-text span.w { color: var(--success) !important; }
-        .record-text span.l { color: var(--danger) !important; }
+       .record-text span.w { 
+    color: #10b981 !important; 
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
+}
+.record-text span.l { 
+    color: #ef4444 !important; 
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
+}
 
         button {
             background: var(--lnp-orange) !important;
@@ -479,6 +485,13 @@
         .lnp-text-win { color: #28a745 !important; font-weight: bold !important; }
         .lnp-text-loss { color: #dc3545 !important; font-weight: bold !important; }
         .lnp-text-pending { color: #aaaaaa !important; }
+
+        .win, .match-win, .lnp-text-win { 
+    color: #10b981 !important; 
+}
+.loss, .match-loss, .lnp-text-loss { 
+    color: #ef4444 !important; 
+}
     </style>
 </head>
 <body>
