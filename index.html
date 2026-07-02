@@ -3445,11 +3445,12 @@ function updateCourtPreview() {
 }
 window.updateCourtPreview = updateCourtPreview;
 
-// ==========================================
-// INTERFACCIA APRI MERCATO (MAX 2 TAGLI)
-// ==========================================
+
 // ==========================================
 // INTERFACCIA APRI MERCATO (CON CONTROLLO INIZIALE)
+// ==========================================
+// ==========================================
+// INTERFACCIA APRI MERCATO (CORRETTA)
 // ==========================================
 function startDraftProcess() {
     const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
@@ -3458,7 +3459,11 @@ function startDraftProcess() {
     const sBtn = document.getElementById('btn-start-draft') || document.querySelector('button[onclick*="startDraft"]');
     if(sBtn) sBtn.disabled = true;
 
-    // Se siamo all'inizio assoluto del campionato (Gara 1), inizializziamo e andiamo al draft totale
+    // Disabilita il tasto gioca finché non c'è una squadra pronta
+    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
+    if(pBtn) pBtn.disabled = true;
+
+    // Se siamo all'inizio assoluto del campionato (Gara 1), andiamo dritti al draft totale
     if (currentMatchNumber <= 1) {
         initChampionshipData();
         generatePerfectSchedule();
@@ -3478,8 +3483,8 @@ function openMarketCutInterface() {
     const container = document.getElementById('draft-options-container');
     if (!container) return;
 
-    // CONTROLLO DI SICUREZZA: Se per qualche motivo la squadra è vuota, fai il draft classico
-    if (!userTeam || Object.keys(userTeam).length === 0 || !userTeam[0]) {
+    // CONTROLLO SICURO: Se la squadra non ha 5 giocatori, forza il draft iniziale classico
+    if (!userTeam || Object.keys(userTeam).length < 5) {
         currentDraftStep = 0;
         userTeam = {};
         renderDraftRound();
@@ -3581,6 +3586,7 @@ function confirmCutsAndStartRepairDraft() {
 window.confirmCutsAndStartRepairDraft = confirmCutsAndStartRepairDraft;
 
 function advanceToNextRepairRole() {
+    // Scorri finché trovi uno slot occupato (non null e non undefined)
     while (currentDraftStep < orderRoles.length && userTeam[currentDraftStep] !== null && userTeam[currentDraftStep] !== undefined) {
         currentDraftStep++;
     }
