@@ -3889,11 +3889,9 @@ function closePlayoffBoxscore() {
 }
 window.closePlayoffBoxscore = closePlayoffBoxscore;
 
+
 // ==========================================
-// 7. SIMULATORE MATCH UTENTE REGULAR SEASON (PRECEDENTE)
-// ==========================================
-// ==========================================
-// 7. SIMULATORE MATCH UTENTE REGULAR SEASON & INTERFACCIA LIVE
+// 7. SIMULATORE MATCH UTENTE REGULAR SEASON (COMPLETO)
 // ==========================================
 function simMatch() {
     if (currentMatchNumber > 38) {
@@ -3930,9 +3928,17 @@ function simMatch() {
     const selectedTactic = selectElem ? selectElem.value : '3-2';
     let matchPace = Math.round(72 + Math.random() * 12);
 
-    if (selectedTactic === '4-1') { userShootingLuck += 8; oppShootingLuck += 10; } 
-    else if (selectedTactic === 'run-gun') { matchPace += 10; userShootingLuck = (Math.random() * 24) - 12; } 
-    else if (selectedTactic === 'defense') { matchPace -= 6; oppShootingLuck -= 8; userShootingLuck -= 8; }
+    if (selectedTactic === '4-1') { 
+        userShootingLuck += 8; 
+        oppShootingLuck += 10; 
+    } else if (selectedTactic === 'run-gun') { 
+        matchPace += 10; 
+        userShootingLuck = (Math.random() * 24) - 12; 
+    } else if (selectedTactic === 'defense') { 
+        matchPace -= 6; 
+        oppShootingLuck -= 8; 
+        userShootingLuck -= 8;
+    }
 
     const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
     const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
@@ -3949,40 +3955,54 @@ function simMatch() {
     myMatch.simulated = true;
 
     if(isWin) {
-        standings["La Tua Squadra"].wins++; standings["La Tua Squadra"].points += 2; userWins++;
+        standings["La Tua Squadra"].wins++; 
+        standings["La Tua Squadra"].points += 2; 
+        userWins++;
     } else {
-        standings["La Tua Squadra"].losses++; userLosses++;
+        standings["La Tua Squadra"].losses++; 
+        userLosses++;
     }
     simulateCPUMatches(currentMatchNumber);
 
-    // Calcolo MVP e statistiche della partita
+    // Generazione Statistiche Giocatori Utente (Punti, Assist, Rimbalzi, Recuperi)
     let realMvpName = playersArray[0].cognome;
-    let maxPts = -1;
-    let statsBlockHtml = `<div style="font-size:0.75rem; background:rgba(0,0,0,0.3); padding:5px; border-radius:4px; margin:4px 0; text-align:left;">`;
+    let maxValuation = -1;
+    let mvpFullStats = "";
+    
+    let statsBlockHtml = `<div style="font-size:0.75rem; background:rgba(0,0,0,0.3); padding:5px; border-radius:4px; margin:4px 0; text-align:left; line-height:1.4;">`;
     
     playersArray.forEach(p => {
-        let pointsScored = Math.round((p.ppg || 12) * (0.6 + Math.random() * 0.8) + (finalUserScore * 0.015));
-        if (pointsScored > maxPts) { maxPts = pointsScored; realMvpName = p.cognome; }
-        statsBlockHtml += `• <strong>${p.cognome}</strong>: ${pointsScored} pt | `;
+        let pPts = Math.round((p.ppg || 12) * (0.6 + Math.random() * 0.8) + (finalUserScore * 0.015));
+        let pAst = Math.round((p.apg || 3) * (0.5 + Math.random() * 1.0));
+        let pReb = Math.round((p.rpg || 4) * (0.5 + Math.random() * 1.0));
+        let pStl = Math.round((p.spg || 1) * (0.4 + Math.random() * 1.2));
+        
+        let valuation = pPts + (pAst * 1.5) + (pReb * 1.2) + (pStl * 2);
+        if (valuation > maxValuation) { 
+            maxValuation = valuation; 
+            realMvpName = p.cognome; 
+            mvpFullStats = `${pPts} PTS, ${pReb} REB, ${pAst} AST`;
+        }
+        
+        statsBlockHtml += `• <strong>${p.cognome}</strong>: ${pPts} PT | ${pReb} RB | ${pAst} AS | ${pStl} REC<br>`;
         
         const key = `${p.cognome}_${p.club}`;
         if(playerStatsStore[key]) {
             playerStatsStore[key].gamesPlayed++;
-            playerStatsStore[key].totalPoints += pointsScored;
+            playerStatsStore[key].totalPoints += pPts;
             playerStatsStore[key].avgPoints = parseFloat((playerStatsStore[key].totalPoints / playerStatsStore[key].gamesPlayed).toFixed(1));
         }
     });
     statsBlockHtml += `</div>`;
-    let mvpFullStats = `${maxPts} PTS`;
 
-    // Animazione a schermo dei Quarti di gioco (Live Ticker)
+    // Ticker live con simulazione dei Quarti di gioco
     let quarter = 1;
     let liveTimer = setInterval(() => {
         const txt = document.getElementById('match-status-text');
         if(!txt) { clearInterval(liveTimer); return; }
         
         if (quarter <= 4) {
-            txt.innerHTML = `<span style="color:#ff9800; font-weight:bold;">QUARTO ${quarter} vicino alla fine...</span>`;
+            txt.innerHTML = `<span style="color:#ff9800; font-weight:bold;">QUARTO ${quarter} in corso...</span>`;
             quarter++;
         } else {
             clearInterval(liveTimer);
@@ -3991,23 +4011,21 @@ function simMatch() {
             let resultColor = isWin ? "#28a745" : "#dc3545";
             let resultLabel = isWin ? "VITTORIA" : "SCONFITTA";
 
-            // GESTIONE SOSTA GARA 19: MERCATO DI RIPARAZIONE
+            // Controllo Gara 19 (Sosta per il Mercato)
             if (currentMatchNumber === 19) {
                 if(banner) {
                     banner.innerHTML = `
                         <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
                         ${statsBlockHtml}
-                        <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PARZIALE MVP: ${realMvpName} (${mvpFullStats})</div>
-                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.2); margin:6px 0;">
-                        <div style="color:#ff9800; font-weight:bold; font-size:1rem; margin-bottom:4px;">GIRONE DI ANDATA CONCLUSO! 🔄</div>
-                        <button onclick="showMarketScreen()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; font-size:0.95rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
+                        <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
+                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
+                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
                     `;
                 }
-                currentMatchNumber++;
-                return;
+                return; // Non incrementa qui, aspetta il click sul mercato
             }
 
-            // GESTIONE SOSTA GARA 38: FINE REGULAR SEASON
+            // Controllo Gara 38 (Fine Regular Season)
             if (currentMatchNumber === 38) {
                 if(banner) {
                     banner.innerHTML = `
@@ -4021,7 +4039,7 @@ function simMatch() {
                 return;
             }
 
-            // Avanzamento turni normali
+            // Avanzamento Turni Standard
             if(banner) {
                 banner.innerHTML = `
                     <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
@@ -4039,8 +4057,15 @@ function closeBoxscore() {
     document.getElementById('main-game-viewport').classList.remove('game-mode');
     const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
     if(pBtn) pBtn.disabled = false;
+    if(typeof updateMatchBanner === "function") updateMatchBanner();
 }
 
+function startMidSeasonMarket() {
+    closeBoxscore();
+    currentMatchNumber = 20; 
+    alert("🔄 Mercato di riparazione sbloccato!\n\nFai i tuoi scambi nella scheda Mercato del gioco.\nAl prossimo click su 'GIOCA PARTITA' ripartirai con la Gara 20!");
+    if(typeof renderCalendarAndStandings === "function") renderCalendarAndStandings();
+}
 // ==========================================
 // 8. INTERFACCIA VISIVA INTERATTIVA DEL MERCATO DI RIPARAZIONE
 // ==========================================
