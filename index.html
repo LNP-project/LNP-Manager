@@ -3515,6 +3515,7 @@ function renderDraftRound() {
 function pickPlayer(role, encodedData) {
     const player = JSON.parse(decodeURIComponent(encodedData));
     userTeam[currentDraftStep] = player;
+    
     const slotElement = document.getElementById(`court-slot-${currentDraftStep}`);
     if (slotElement) {
         slotElement.className = "court-player-slot filled";
@@ -3524,15 +3525,26 @@ function pickPlayer(role, encodedData) {
             <div class="p-club">${player.club}</div>
             <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
         `;
-        if (typeof userTeam === 'object' && Object.values(userTeam).includes(null)) {
+    }
+    
+    currentDraftStep++;
+    
+    // --- IL CONTROLLO INTELLIGENTE PER IL MERCATO ---
+    // Se ci sono ancora ruoli liberi (messi a null dai tagli), chiama il prossimo ruolo del mercato
+    if (userTeam && Object.values(userTeam).includes(null)) {
         if (typeof advanceToNextRepairRole === 'function') {
             advanceToNextRepairRole();
-            return;
+            return; // Ferma il flusso standard ed evita che carichi il draft normale
+        }
     }
-    currentDraftStep++;
-    renderDraftRound();
     
+    // Altrimenti prosegue con il draft iniziale standard se sei a inizio gioco
+    if (typeof renderDraftRound === 'function') {
+        renderDraftRound();
+    }
 }
+window.pickPlayer = pickPlayer;
+
 
 function renderCalendarAndStandings() {
     try {
@@ -4259,19 +4271,16 @@ function togglePlayerCut(idx) {
     const btn = document.getElementById(`btn-cut-${idx}`);
     
     if (window.playersToCut.includes(idx)) {
-        // Annulla il taglio
         window.playersToCut = window.playersToCut.filter(id => id !== idx);
         card.style.border = "2px solid #1e3d59";
         card.style.background = "#0f2439";
         btn.innerText = "Taglia Giocatore";
         btn.style.background = "#dc3545";
     } else {
-        // Controllo del limite massimo di 2 giocatori
         if (window.playersToCut.length >= 2) {
             alert("Puoi tagliare al massimo 2 giocatori!");
             return;
         }
-        // Conferma il taglio visivamente
         window.playersToCut.push(idx);
         card.style.border = "2px solid #dc3545";
         card.style.background = "#2d161a";
@@ -4288,7 +4297,6 @@ function confirmCutsAndStartRepairDraft() {
         return;
     }
 
-    // Svuota solo gli slot dei giocatori che l'utente ha deciso di tagliare
     window.playersToCut.forEach(idx => {
         userTeam[idx] = null; 
         const slotElement = document.getElementById(`court-slot-${idx}`);
@@ -4301,29 +4309,24 @@ function confirmCutsAndStartRepairDraft() {
         }
     });
 
-    // Ripristina la griglia standard a 5 colonne per il draft nativo
     const container = document.getElementById('draft-options-container');
     if (container) container.style.gridTemplateColumns = "repeat(5, 1fr)";
 
-    // Fa partire la ricerca dal primo slot
     currentDraftStep = 0;
     advanceToNextRepairRole();
 }
 window.confirmCutsAndStartRepairDraft = confirmCutsAndStartRepairDraft;
 
 function advanceToNextRepairRole() {
-    // Scorri i ruoli: se lo slot è occupato (non null), saltalo e passa al successivo
     while (currentDraftStep < orderRoles.length && userTeam[currentDraftStep] !== null && userTeam[currentDraftStep] !== undefined) {
         currentDraftStep++;
     }
     
-    // Se abbiamo controllato tutti e 5 i ruoli e sono pieni, il mercato è finito
     if (currentDraftStep >= orderRoles.length) {
         closeRepairMarket();
         return;
     }
 
-    // Esegue la funzione nativa di GitHub per mostrare il draft del ruolo attualmente impostato in currentDraftStep
     if (typeof renderDraftRound === 'function') {
         renderDraftRound(); 
     } else {
@@ -4344,24 +4347,13 @@ function closeRepairMarket() {
     const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
     if(pBtn) pBtn.disabled = false;
     
-    // Forza l'aggiornamento della classifica e del calendario nativo
+    // Aggiorna l'indice alla giornata 20 solo quando il mercato si chiude ufficialmente
+    currentMatchNumber = 20;
     if (typeof renderCalendarAndStandings === 'function') {
         renderCalendarAndStandings();
     }
 }
 window.closeRepairMarket = closeRepairMarket;
-
-// Dirotta la funzione di scelta del giocatore per farle controllare se ci sono altri ruoli tagliati da riempire
-const originalPickPlayer = window.pickPlayer;
-window.pickPlayer = function(role, encodedData) {
-    if (typeof originalPickPlayer === 'function') {
-        originalPickPlayer(role, encodedData);
-    }
-    // Dopo aver inserito il giocatore, controlla se ci sono altri slot rimasti vuoti (null) dai tagli
-    if (Object.values(userTeam).includes(null)) {
-        advanceToNextRepairRole();
-    }
-};
 
     </script>
 </body>
