@@ -3505,22 +3505,24 @@ function pickPlayer(role, encodedData) {
 
 
 
-// 4. FIX COLORI E RIGENERAZIONE CONTENITORI (BLINDATO)
-// ==========================================
-// ==========================================
-// 4. FIX DEFINITIVO: AGGIORNAMENTO COUNTER COLONNA DESTRA
+// 4. FIX CHIRURGICO: DISTINZIONE TRA TITOLO E COUNTER PANNELLO
 // ==========================================
 function renderCalendarAndStandings() {
-    // 1. AGGIORNAMENTO CONTATORE IN ALTO A DESTRA (SOPRA IL DIARIO DI BORDO)
+    // 1. AGGIORNAMENTO CONTATORE DEL PANNELLO SQUADRA (DESTRA)
     try {
-        // Cerchiamo tutti gli elementi della pagina per trovare la testata del pannello a destra
+        // Troviamo il blocco intestazione del pannello squadra
         const allElements = Array.from(document.querySelectorAll('div, h2, h3, h4, .panel-title, .widget-title'));
         const pannelloSquadraEl = allElements.find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
 
         if (pannelloSquadraEl && pannelloSquadraEl.parentNode) {
-            // Cerchiamo il testo con il pattern "Numero - Numero" nel box del Pannello Squadra
+            // Cerchiamo il testo del punteggio SOLO all'interno dei discendenti del Pannello Squadra
             const counterTarget = Array.from(pannelloSquadraEl.parentNode.querySelectorAll('div, p, span'))
-                .find(el => el.innerText && el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/));
+                .find(el => {
+                    // Deve contenere il pattern numerico e NON deve far parte del titolo LNP Challenge principale
+                    return el.innerText && 
+                           el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/) && 
+                           !el.innerText.toUpperCase().includes("CHALLENGE");
+                });
             
             if (counterTarget) {
                 counterTarget.innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
@@ -3592,32 +3594,6 @@ function renderCalendarAndStandings() {
 
     container.innerHTML = html;
 }
-    // 3. AGGIORNAMENTO DEL CONTATORE PANNELLO SQUADRA (VERSIONE NUMERO CERCASI)
-    // ==========================================
-    
-    // Se abbiamo già battezzato gli elementi nei turni precedenti, li aggiorna all'istante
-    const winEl = document.getElementById('lnp-counter-vittorie');
-    const lossEl = document.getElementById('lnp-counter-sconfitte');
-    
-    if (winEl && lossEl) {
-        winEl.innerText = userWins;
-        lossEl.innerText = userLosses;
-    } else {
-        // Altrimenti, cerca il blocco sotto "PANNELLO SQUADRA" per la prima volta
-        const headers = Array.from(document.querySelectorAll('div, h2, h3, h4, th, .panel-title'));
-        const panelHeader = headers.find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
-        
-        if (panelHeader && panelHeader.parentNode) {
-            // Cerca il testo del punteggio tipo 0-0, 1-0, ecc. nel raggio del box
-            const target = Array.from(panelHeader.parentNode.querySelectorAll('div, p, span'))
-                .find(el => el.innerText && el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/));
-            
-            if (target) {
-                // Ricostruisce la struttura inserendo ID statici per i turni successivi
-                target.innerHTML = `<span id="lnp-counter-vittorie">${userWins}</span> - <span id="lnp-counter-sconfitte">${userLosses}</span>`;
-            }
-        }
-    }
 
 
 // ==========================================
