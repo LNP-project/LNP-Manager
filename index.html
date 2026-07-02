@@ -4277,8 +4277,9 @@ function togglePlayerCut(idx) {
         btn.innerText = "Taglia Giocatore";
         btn.style.background = "#dc3545";
     } else {
+        // BLOCCO SEVERO: Se hai già selezionato 2 giocatori, non ti fa fare il terzo per nessun motivo
         if (window.playersToCut.length >= 2) {
-            alert("Puoi tagliare al massimo 2 giocatori!");
+            alert("⚠️ Regolamento LNP: Puoi fare al massimo 2 cambi nel mercato di riparazione!");
             return;
         }
         window.playersToCut.push(idx);
@@ -4291,6 +4292,7 @@ function togglePlayerCut(idx) {
 window.togglePlayerCut = togglePlayerCut;
 
 function confirmCutsAndStartRepairDraft() {
+    // Se l'utente non ha tagliato nessuno, il mercato si chiude senza toccare nulla
     if (window.playersToCut.length === 0) {
         alert("Nessun taglio effettuato. La tua squadra rimane invariata!");
         closeRepairMarket();
@@ -4329,8 +4331,6 @@ function advanceToNextRepairRole() {
 
     if (typeof renderDraftRound === 'function') {
         renderDraftRound(); 
-    } else {
-        alert("Errore: Impossibile avviare il round di draft nativo.");
     }
 }
 window.advanceToNextRepairRole = advanceToNextRepairRole;
@@ -4347,8 +4347,12 @@ function closeRepairMarket() {
     const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
     if(pBtn) pBtn.disabled = false;
     
-    // Aggiorna l'indice alla giornata 20 solo quando il mercato si chiude ufficialmente
-    currentMatchNumber = 20;
+    // Aggiorna la giornata alla 20 solo se siamo fermi alla 19
+    if (currentMatchNumber <= 19) {
+        currentMatchNumber = 20;
+    }
+    
+    // Mostra la classifica e i risultati passati SENZA resettare i dati del calendario
     if (typeof renderCalendarAndStandings === 'function') {
         renderCalendarAndStandings();
     }
