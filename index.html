@@ -4113,152 +4113,18 @@ function simMatch() {
 
             renderCalendarAndStandings();
 
-          // ==================================================================
-// 1. IL TUO BLOCCO "IF (CURRENTMATCHNUMBER === 19)" MODIFICATO
-// ==================================================================
-if (currentMatchNumber === 19) {
-    if(banner) {
-        banner.innerHTML = `
-            <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
-            ${statsBlockHtml}
-            <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
-            <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
-        `;
-    }
-    // NOTA: Ho tolto currentMatchNumber++ da qui! Aumenterà SOLO quando chiuderai il mercato.
-    return; 
-}
-
-// ==================================================================
-// 2. FUNZIONI DI MERCATO CHIRURGICHE (INCOLLALE SUBITO SOTTO)
-// ==================================================================
-let playersToCut = [];
-
-function startMidSeasonMarket() {
-    const container = document.getElementById('draft-options-container');
-    if (!container) return;
-
-    document.getElementById('draft-title-text').innerHTML = `
-        <span style="color:#ffffff !important;">Mercato di Riparazione: </span>
-        <span style="color:#ff9800 !important; font-weight:bold;">Scegli chi tagliare (Max 2)</span>
-    `;
-
-    container.innerHTML = '';
-    container.style.gridTemplateColumns = "repeat(auto-fit, minmax(180px, 1fr))";
-    playersToCut = [];
-
-    // orderRoles è l'array dei ruoli del tuo gioco ('PG', 'SG', ecc.)
-    orderRoles.forEach((role, idx) => {
-        const player = userTeam[idx];
-        if (!player) return;
-
-        const card = document.createElement('div');
-        card.className = 'draft-option-card';
-        card.id = `cut-card-${idx}`;
-        card.style.cssText = "background:#0f2439; border:2px solid #1e3d59; padding:15px; border-radius:8px; text-align:center; color:#fff;";
-        
-        card.innerHTML = `
-            <div style="margin-bottom:8px;">
-                <div style="color:#ff9800; font-size:1.1rem; font-weight:bold;">${player.cognome}</div>
-                <div style="font-size:0.8rem; color:#cbd5e0;">${role} - ${player.club}</div>
-            </div>
-            <button id="btn-cut-${idx}" style="background:#dc3545; color:#fff; border:none; padding:6px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold; font-size:0.8rem;" 
-                onclick="togglePlayerCut(${idx})">Taglia</button>
-        `;
-        container.appendChild(card);
-    });
-
-    const confirmDiv = document.createElement('div');
-    confirmDiv.style.cssText = "grid-column: 1 / -1; text-align: center; margin-top: 15px;";
-    confirmDiv.innerHTML = `
-        <button onclick="confirmCutsAndStartRepairDraft()" style="background:#28a745; color:white; border:none; padding:12px 25px; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer;">
-            Conferma Scelte ➔
-        </button>
-    `;
-    container.appendChild(confirmDiv);
-    
-    // Chiude il viewport della partita vecchia per mostrare il mercato
-    document.getElementById('main-game-viewport').classList.remove('game-mode');
-}
-window.startMidSeasonMarket = startMidSeasonMarket;
-
-function togglePlayerCut(idx) {
-    const card = document.getElementById(`cut-card-${idx}`);
-    const btn = document.getElementById(`btn-cut-${idx}`);
-    
-    if (playersToCut.includes(idx)) {
-        playersToCut = playersToCut.filter(id => id !== idx);
-        card.style.border = "2px solid #1e3d59";
-        card.style.background = "#0f2439";
-        btn.innerText = "Taglia";
-        btn.style.background = "#dc3545";
-    } else {
-        if (playersToCut.length >= 2) {
-            alert("Puoi tagliare al massimo 2 giocatori!");
-            return;
-        }
-        playersToCut.push(idx);
-        card.style.border = "2px solid #dc3545";
-        card.style.background = "#2d161a";
-        btn.innerText = "Tagliato (Annulla)";
-        btn.style.background = "#6c757d";
-    }
-}
-window.togglePlayerCut = togglePlayerCut;
-
-function confirmCutsAndStartRepairDraft() {
-    if (playersToCut.length === 0) {
-        alert("Nessun taglio effettuato. La squadra rimane identica!");
-        closeRepairMarket();
-        return;
-    }
-
-    // Svuota solo i giocatori tagliati
-    playersToCut.forEach(idx => {
-        userTeam[idx] = null; 
-        const slotElement = document.getElementById(`court-slot-${idx}`);
-        if (slotElement) {
-            slotElement.className = "court-player-slot";
-            slotElement.innerHTML = `<span class="role-indicator">${orderRoles[idx]}</span><div class="p-name">?</div><div class="p-club">-</div>`;
-        }
-    });
-
-    const container = document.getElementById('draft-options-container');
-    if (container) container.style.gridTemplateColumns = "repeat(5, 1fr)";
-
-    currentDraftStep = 0;
-    advanceToNextRepairRole();
-}
-window.confirmCutsAndStartRepairDraft = confirmCutsAndStartRepairDraft;
-
-function advanceToNextRepairRole() {
-    // Cerca il primo slot libero (null)
-    while (currentDraftStep < orderRoles.length && userTeam[currentDraftStep] !== null && userTeam[currentDraftStep] !== undefined) {
-        currentDraftStep++;
-    }
-    
-    // Se non ci sono più slot vuoti, il mercato è finito!
-    if (currentDraftStep >= orderRoles.length) {
-        closeRepairMarket();
-        return;
-    }
-
-    // Lancia la tua funzione nativa di GitHub per fare il draft del singolo ruolo rimasto vuoto
-    renderDraftRound(); 
-}
-
-function closeRepairMarket() {
-    document.getElementById('draft-title-text').innerHTML = `<span>Mercato Concluso!</span>`;
-    document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Roster pronto per il girone di ritorno. Clicca su "GIOCA PARTITA".</div>';
-    
-    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
-    if(pBtn) pBtn.disabled = false;
-    
-    // ORA passiamo alla giornata 20 in tutta sicurezza
-    currentMatchNumber = 20; 
-    if (typeof renderCalendarAndStandings === 'function') renderCalendarAndStandings();
-}
+          if (currentMatchNumber === 19) {
+                if(banner) {
+                    banner.innerHTML = `
+                        <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                        ${statsBlockHtml}
+                        <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
+                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
+                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
+                    `;
+                }
+                currentMatchNumber++;
+                return; // Si ferma qui per il mercato
             }
 
             if (currentMatchNumber === 38) {
@@ -4285,7 +4151,7 @@ function closeRepairMarket() {
             }
             currentMatchNumber++;
         }
-    , 90); // Fine intervallo ticker live
+    }, 90); // Fine intervallo ticker live
 } // <--- FINE DELLA FUNZIONE simMatch()
 
 // Assicurati che closeBoxscore sia scritta così per non bloccare la UI
