@@ -3265,6 +3265,9 @@
 // ==========================================
 // 1. INIEZIONE CSS PER AD ALTO CONTRASTO
 // ==========================================
+// ==========================================
+// 1. INIEZIONE CSS PER AD ALTO CONTRASTO
+// ==========================================
 (function injectPerfectCSS() {
     const styleId = "lnp-challenge-overrides";
     if (document.getElementById(styleId)) return;
@@ -3302,23 +3305,23 @@
 })();
 
 // ==========================================
-// 2. VARIABILI DI STATO GLOBALI
+// 2. VARIABILI DI STATO GLOBALI (INIZIALIZZAZIONE SICURA)
 // ==========================================
 const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
 const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
 
 let orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
 let currentDraftStep = 0;
-let userTeam = userTeam || {}; // Mantiene se esiste già
-let currentMatchNumber = currentMatchNumber || 1;
-let fullLeagueSchedule = fullLeagueSchedule || []; 
-
-let userWins = userWins || 0;
-let userLosses = userLosses || 0;
-
-let standings = standings || {}; 
-let playerStatsStore = playerStatsStore || {}; 
 let playersToCut = []; 
+
+// Controllo sicuro per evitare l'errore "uninitialized variable"
+if (typeof userTeam === 'undefined') { window.userTeam = {}; }
+if (typeof currentMatchNumber === 'undefined') { window.currentMatchNumber = 1; }
+if (typeof fullLeagueSchedule === 'undefined') { window.fullLeagueSchedule = []; }
+if (typeof userWins === 'undefined') { window.userWins = 0; }
+if (typeof userLosses === 'undefined') { window.userLosses = 0; }
+if (typeof standings === 'undefined') { window.standings = {}; }
+if (typeof playerStatsStore === 'undefined') { window.playerStatsStore = {}; }
 
 let playoffBracket = null;
 let currentPlayoffRound = "Quarti"; 
@@ -3349,7 +3352,7 @@ function updateCourtPreview() {
     if (courtContainer) {
         courtContainer.innerHTML = "";
         orderRoles.forEach((role, index) => {
-            const player = userTeam[index];
+            const player = window.userTeam[index];
             if (player) {
                 courtContainer.innerHTML += `
                     <div id="court-slot-${index}" class="court-player-slot filled">
@@ -3381,14 +3384,14 @@ function renderCalendarAndStandings() {
                 return text.match(/^\d+\s*[-–]\s*\d+$/) && !text.toUpperCase().includes("CHALLENGE");
             });
         if (potentialCounters.length > 0) {
-            potentialCounters[0].innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
+            potentialCounters[0].innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${window.userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${window.userLosses}</span>`;
         }
     } catch (e) {}
 
     const container = document.getElementById('calendar-render-box') || document.querySelector('.calendar-list') || document.querySelector('.calendar-item')?.parentNode;
     if (!container) return;
 
-    let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
+    let sortedTeams = Object.values(window.standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
     let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
     if (myPos === 0) myPos = 1;
 
@@ -3419,7 +3422,7 @@ function renderCalendarAndStandings() {
 
     html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>
     <div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
-    fullLeagueSchedule.forEach(giornata => {
+    window.fullLeagueSchedule.forEach(giornata => {
         const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
         if(!myMatch) return;
         const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
@@ -3441,22 +3444,22 @@ function renderCalendarAndStandings() {
 window.renderCalendarAndStandings = renderCalendarAndStandings;
 
 // ==========================================
-// 5. INIZIALIZZAZIONE CAMPIONATO & TABELLONE
+// 5. INIZIALIZZAZIONE CAMPIONATO
 // ==========================================
 function initChampionshipData() {
-    standings = {};
-    totalTeams.forEach(team => { standings[team] = { teamName: team, wins: 0, losses: 0, points: 0 }; });
-    playerStatsStore = {};
+    window.standings = {};
+    totalTeams.forEach(team => { window.standings[team] = { teamName: team, wins: 0, losses: 0, points: 0 }; });
+    window.playerStatsStore = {};
     allPlayers.forEach(p => {
         if (p && p.cognome) {
-            playerStatsStore[`${p.cognome}_${p.club}`] = { cognome: p.cognome, club: p.club, gamesPlayed: 0, totalPoints: 0, avgPoints: 0 };
+            window.playerStatsStore[`${p.cognome}_${p.club}`] = { cognome: p.cognome, club: p.club, gamesPlayed: 0, totalPoints: 0, avgPoints: 0 };
         }
     });
 }
 
 function generatePerfectSchedule() {
     initChampionshipData();
-    fullLeagueSchedule = [];
+    window.fullLeagueSchedule = [];
     let list = ["La Tua Squadra", ...shuffleArray([...opponentTeams])];
     const numTeams = list.length, rounds = numTeams - 1; 
 
@@ -3467,12 +3470,12 @@ function generatePerfectSchedule() {
             if (r % 2 === 1) roundMatches.push({ home: away, away: home, score: "", simulated: false });
             else roundMatches.push({ home: home, away: away, score: "", simulated: false });
         }
-        fullLeagueSchedule.push({ round: r + 1, matches: roundMatches });
+        window.fullLeagueSchedule.push({ round: r + 1, matches: roundMatches });
         list.splice(1, 0, list.pop());
     }
     for (let r = 0; r < rounds; r++) {
-        let roundMatches = fullLeagueSchedule[r].matches.map(m => { return { home: m.away, away: m.home, score: "", simulated: false }; });
-        fullLeagueSchedule.push({ round: r + 20, matches: roundMatches });
+        let roundMatches = window.fullLeagueSchedule[r].matches.map(m => { return { home: m.away, away: m.home, score: "", simulated: false }; });
+        window.fullLeagueSchedule.push({ round: r + 20, matches: roundMatches });
     }
     renderCalendarAndStandings();
 }
@@ -3491,22 +3494,22 @@ function startDraftProcess() {
     if(pBtn) pBtn.disabled = true;
 
     let squadSize = 0;
-    if (userTeam && typeof userTeam === 'object') {
-        squadSize = Object.keys(userTeam).filter(k => userTeam[k] !== null && userTeam[k] !== undefined).length;
+    if (window.userTeam && typeof window.userTeam === 'object') {
+        squadSize = Object.keys(window.userTeam).filter(k => window.userTeam[k] !== null && window.userTeam[k] !== undefined).length;
     }
 
-    // Se la squadra non ha 5 giocatori o siamo a Gara 1, avvia il draft totale pulito
-    if (squadSize < 5 || currentMatchNumber <= 1) {
-        currentMatchNumber = 1;
-        userWins = 0; userLosses = 0;
-        userTeam = {};
+    // Se la squadra è incompleta o siamo all'inizio
+    if (squadSize < 5 || window.currentMatchNumber <= 1) {
+        window.currentMatchNumber = 1;
+        window.userWins = 0; window.userLosses = 0;
+        window.userTeam = {};
         generatePerfectSchedule();
         currentDraftStep = 0;
         renderDraftRound();
         return;
     }
 
-    // Altrimenti attiva la fase dei tagli (Max 2)
+    // Altrimenti lancia la fase tagli a metà stagione
     playersToCut = []; 
     openMarketCutInterface();
 }
@@ -3524,7 +3527,7 @@ function openMarketCutInterface() {
     container.style.gridTemplateColumns = "repeat(auto-fit, minmax(180px, 1fr))";
 
     orderRoles.forEach((role, idx) => {
-        const player = userTeam[idx];
+        const player = window.userTeam[idx];
         if (!player) return;
         const card = document.createElement('div');
         card.className = 'draft-option-card';
@@ -3571,7 +3574,7 @@ function confirmCutsAndStartRepairDraft() {
         return;
     }
     playersToCut.forEach(idx => {
-        userTeam[idx] = null;
+        window.userTeam[idx] = null;
         const slot = document.getElementById(`court-slot-${idx}`);
         if(slot) slot.innerHTML = `<span class="role-indicator">${orderRoles[idx]}</span><div class="p-name">?</div><div class="p-club">-</div>`;
     });
@@ -3583,7 +3586,7 @@ function confirmCutsAndStartRepairDraft() {
 window.confirmCutsAndStartRepairDraft = confirmCutsAndStartRepairDraft;
 
 function advanceToNextRepairRole() {
-    while (currentDraftStep < orderRoles.length && userTeam[currentDraftStep] !== null && userTeam[currentDraftStep] !== undefined) {
+    while (currentDraftStep < orderRoles.length && window.userTeam[currentDraftStep] !== null && window.userTeam[currentDraftStep] !== undefined) {
         currentDraftStep++;
     }
     if (currentDraftStep >= orderRoles.length) {
@@ -3610,7 +3613,7 @@ function renderDraftRound() {
     document.getElementById('draft-title-text').innerHTML = `<span style="color:#fff;">Fase ${currentDraftStep + 1}: Scegli il tuo </span><span style="color:#ff9800; font-weight:bold;">${activeRole}</span>`;
 
     let pool = (activeRole === 'SG') ? allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG') : allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
-    const currentSelected = Object.values(userTeam).filter(Boolean).map(p => p.cognome);
+    const currentSelected = Object.values(window.userTeam).filter(Boolean).map(p => p.cognome);
     pool = pool.filter(p => p && p.cognome && !currentSelected.includes(p.cognome));
 
     let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
@@ -3635,14 +3638,14 @@ function renderDraftRound() {
 
 function pickPlayer(role, encodedData) {
     const player = JSON.parse(decodeURIComponent(encodedData));
-    userTeam[currentDraftStep] = player;
+    window.userTeam[currentDraftStep] = player;
     const slot = document.getElementById(`court-slot-${currentDraftStep}`);
     if (slot) {
         slot.className = "court-player-slot filled";
         slot.innerHTML = `<span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span><div class="p-name" style="color:white; font-weight:bold;">${player.cognome}</div><div class="p-club">${player.club}</div>`;
     }
     currentDraftStep++;
-    let isRepair = Object.values(userTeam).includes(null);
+    let isRepair = Object.values(window.userTeam).includes(null);
     if(isRepair) advanceToNextRepairRole(); else renderDraftRound();
 }
 window.pickPlayer = pickPlayer;
@@ -3651,7 +3654,7 @@ window.pickPlayer = pickPlayer;
 // 7. SIMULATORE MATCH REGULAR SEASON & CPU
 // ==========================================
 function simulateCPUMatches(currentRound) {
-    const roundData = fullLeagueSchedule[currentRound - 1];
+    const roundData = window.fullLeagueSchedule[currentRound - 1];
     if (!roundData) return;
     roundData.matches.forEach(match => {
         if (match.home === "La Tua Squadra" || match.away === "La Tua Squadra") return; 
@@ -3665,15 +3668,15 @@ function simulateCPUMatches(currentRound) {
         let sHome = Math.round(pace * hEff), sAway = Math.round(pace * aEff);
         if (sHome === sAway) sHome += Math.random() > 0.5 ? 2 : -2;
         match.score = `${sHome} - ${sAway}`; match.simulated = true;
-        if (sHome > sAway) { standings[match.home].wins++; standings[match.home].points += 2; standings[match.away].losses++; }
-        else { standings[match.away].wins++; standings[match.away].points += 2; standings[match.home].losses++; }
+        if (sHome > sAway) { window.standings[match.home].wins++; window.standings[match.home].points += 2; window.standings[match.away].losses++; }
+        else { window.standings[match.away].wins++; window.standings[match.away].points += 2; window.standings[match.home].losses++; }
     });
 }
 
 function simMatch() {
-    if (currentMatchNumber > 38) { buildPlayoffBrackets(); return; }
-    const giornataData = fullLeagueSchedule[currentMatchNumber - 1];
-    const myMatch = giornataData.matches.find(m => m.home === "La Tua Navetta" || m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
+    if (window.currentMatchNumber > 38) { return; }
+    const giornataData = window.fullLeagueSchedule[window.currentMatchNumber - 1];
+    const myMatch = giornataData.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
     const opponentName = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
 
     document.getElementById('main-game-viewport').classList.add('game-mode');
@@ -3683,7 +3686,7 @@ function simMatch() {
     if(banner) banner.innerHTML = `<div style="color:#ff9800; font-weight:bold;">PALLA A DUE VS: ${opponentName.toUpperCase()}</div>`;
 
     setTimeout(() => {
-        let playersArray = Object.values(userTeam).filter(Boolean);
+        let playersArray = Object.values(window.userTeam).filter(Boolean);
         let myOvr = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
         let pace = Math.round(72 + Math.random() * 12);
         let userScore = Math.round(pace * (0.70 + (myOvr * 0.0035) + (Math.random() * 0.1 - 0.05)));
@@ -3691,26 +3694,25 @@ function simMatch() {
         if (userScore === oppScore) userScore += Math.random() > 0.5 ? 2 : -2;
 
         myMatch.score = `${userScore} - ${oppScore}`; myMatch.simulated = true;
-        if (userScore > oppScore) { userWins++; standings["La Tua Squadra"].wins++; standings["La Tua Squadra"].points += 2; }
-        else { userLosses++; standings["La Tua Squadra"].losses++; }
+        if (userScore > oppScore) { window.userWins++; window.standings["La Tua Squadra"].wins++; window.standings["La Tua Squadra"].points += 2; }
+        else { window.userLosses++; window.standings["La Tua Squadra"].losses++; }
 
-        simulateCPUMatches(currentMatchNumber);
+        simulateCPUMatches(window.currentMatchNumber);
         renderCalendarAndStandings();
 
         if(banner) {
             banner.innerHTML = `
                 <div style="font-size:1.2rem; color:${userScore > oppScore ? '#28a745':'#dc3545'} !important; font-weight:bold;">FINALE: ${userScore} - ${oppScore}</div>
-                <button onclick="currentMatchNumber++; document.getElementById('main-game-viewport').classList.remove('game-mode'); renderCalendarAndStandings();" style="margin-top:5px; background:#ff9800; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Prosegui ➔</button>
+                <button onclick="window.currentMatchNumber++; document.getElementById('main-game-viewport').classList.remove('game-mode'); window.renderCalendarAndStandings();" style="margin-top:5px; background:#ff9800; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Prosegui ➔</button>
             `;
         }
     }, 600);
 }
 window.simMatch = simMatch;
 
-// Avvia automaticamente il setup grafico al primo caricamento
+// Avvia setup grafico
 updateCourtPreview();
 
-
-    </script>
+</script>
 </body>
 </html>
