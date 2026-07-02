@@ -4154,12 +4154,40 @@ function simMatch() {
     }, 90); // Fine intervallo ticker live
 } // <--- FINE DELLA FUNZIONE simMatch()
 
+// Assicurati che closeBoxscore sia scritta così per non bloccare la UI
 function closeBoxscore() {
     document.getElementById('main-game-viewport').classList.remove('game-mode');
     const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
     if(pBtn) pBtn.disabled = false;
     if(typeof updateMatchBanner === "function") updateMatchBanner();
 }
+
+// NUOVA FUNZIONE: Gestisce il click sul pulsante del mercato di riparazione
+function startMidSeasonMarket() {
+    // 1. Chiudiamo il boxscore della partita per liberare lo schermo
+    closeBoxscore();
+    
+    // 2. Forza l'avanzamento del contatore a 20 per uscire dal loop di sosta della gara 19
+    currentMatchNumber = 20; 
+
+    // 3. Esegui la logica per mostrare il mercato di riparazione
+    // Nota: Se avevi un'altra funzione specifica per la UI del mercato, chiamala qui.
+    if (typeof showMarketScreen === "function") {
+        showMarketScreen(); 
+    } else {
+        // Soluzione di fallback se la schermata del mercato è gestita diversamente
+        const marketTab = document.getElementById('tab-market') || document.querySelector('[data-tab="market"]');
+        if (marketTab) {
+            marketTab.click(); // Simula il click sulla scheda del mercato
+        } else {
+            alert("Mercato di riparazione aperto! Gestisci i tuoi scambi nella scheda Mercato.");
+        }
+    }
+    
+    // 4. Aggiorna i banner di gioco per mostrare il prossimo turno (Gara 20)
+    if(typeof updateMatchBanner === "function") updateMatchBanner();
+}
+
 
 </script>
 </body>
