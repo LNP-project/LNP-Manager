@@ -3524,9 +3524,14 @@ function pickPlayer(role, encodedData) {
             <div class="p-club">${player.club}</div>
             <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
         `;
+        if (typeof userTeam === 'object' && Object.values(userTeam).includes(null)) {
+        if (typeof advanceToNextRepairRole === 'function') {
+            advanceToNextRepairRole();
+            return;
     }
     currentDraftStep++;
     renderDraftRound();
+    
 }
 
 function renderCalendarAndStandings() {
@@ -4187,7 +4192,176 @@ function startMidSeasonMarket() {
     // 4. Aggiorna i banner di gioco per mostrare il prossimo turno (Gara 20)
     if(typeof updateMatchBanner === "function") updateMatchBanner();
 }
+// ==================================================================
+// FUNZIONI PER IL MERCATO DI RIPARAZIONE CHIRURGICO (MAX 2 TAGLI)
+// ==================================================================
+window.playersToCut = [];
 
+function startMidSeasonMarket() {
+    const container = document.getElementById('draft-options-container');
+    if (!container) {
+        alert("Errore: impossibile trovare il contenitore del draft!");
+        return;
+    }
+
+    // Cambia il titolo della schermata
+    const titleText = document.getElementById('draft-title-text');
+    if (titleText) {
+        titleText.innerHTML = `
+            <span style="color:#ffffff !important;">Mercato di Riparazione: </span>
+            <span style="color:#ff9800 !important; font-weight:bold;">Scegli chi tagliare (Max 2)</span>
+        `;
+    }
+
+    container.innerHTML = '';
+    container.style.gridTemplateColumns = "repeat(auto-fit, minmax(180px, 1fr))";
+    window.playersToCut = [];
+
+    // Genera le card per i tuoi 5 giocatori attuali usando l'array globale orderRoles
+    orderRoles.forEach((role, idx) => {
+        const player = userTeam[idx];
+        if (!player) return;
+
+        const card = document.createElement('div');
+        card.className = 'draft-option-card';
+        card.id = `cut-card-${idx}`;
+        card.style.cssText = "background:#0f2439; border:2px solid #1e3d59; padding:15px; border-radius:8px; text-align:center; color:#fff; box-shadow: 0 4px 10px rgba(0,0,0,0.5);";
+        
+        card.innerHTML = `
+            <div style="margin-bottom:12px;">
+                <div style="color:#ff9800; font-size:1.1rem; font-weight:bold; margin-bottom:4px;">${player.cognome}</div>
+                <div style="font-size:0.85rem; color:#cbd5e0;">${role} - ${player.club}</div>
+            </div>
+            <button id="btn-cut-${idx}" style="background:#dc3545; color:#fff; border:none; padding:8px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold; font-size:0.85rem; transition: background 0.2s;" 
+                onclick="togglePlayerCut(${idx})">Taglia Giocatore</button>
+        `;
+        container.appendChild(card);
+    });
+
+    // Aggiunge il pulsante di conferma in fondo alla griglia
+    const confirmDiv = document.createElement('div');
+    confirmDiv.style.cssText = "grid-column: 1 / -1; text-align: center; margin-top: 20px;";
+    confirmDiv.innerHTML = `
+        <button onclick="confirmCutsAndStartRepairDraft()" style="background:#28a745; color:white; border:none; padding:12px 30px; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+            Conferma Scelte ed Entra nel Draft ➔
+        </button>
+    `;
+    container.appendChild(confirmDiv);
+    
+    // Chiude il pannello della partita simulata per mostrare la griglia del mercato
+    const viewport = document.getElementById('main-game-viewport');
+    if (viewport) viewport.classList.remove('game-mode');
+}
+window.startMidSeasonMarket = startMidSeasonMarket;
+
+function togglePlayerCut(idx) {
+    const card = document.getElementById(`cut-card-${idx}`);
+    const btn = document.getElementById(`btn-cut-${idx}`);
+    
+    if (window.playersToCut.includes(idx)) {
+        // Annulla il taglio
+        window.playersToCut = window.playersToCut.filter(id => id !== idx);
+        card.style.border = "2px solid #1e3d59";
+        card.style.background = "#0f2439";
+        btn.innerText = "Taglia Giocatore";
+        btn.style.background = "#dc3545";
+    } else {
+        // Controllo del limite massimo di 2 giocatori
+        if (window.playersToCut.length >= 2) {
+            alert("Puoi tagliare al massimo 2 giocatori!");
+            return;
+        }
+        // Conferma il taglio visivamente
+        window.playersToCut.push(idx);
+        card.style.border = "2px solid #dc3545";
+        card.style.background = "#2d161a";
+        btn.innerText = "Tagliato (Annulla)";
+        btn.style.background = "#6c757d";
+    }
+}
+window.togglePlayerCut = togglePlayerCut;
+
+function confirmCutsAndStartRepairDraft() {
+    if (window.playersToCut.length === 0) {
+        alert("Nessun taglio effettuato. La tua squadra rimane invariata!");
+        closeRepairMarket();
+        return;
+    }
+
+    // Svuota solo gli slot dei giocatori che l'utente ha deciso di tagliare
+    window.playersToCut.forEach(idx => {
+        userTeam[idx] = null; 
+        const slotElement = document.getElementById(`court-slot-${idx}`);
+        if (slotElement) {
+            slotElement.className = "court-player-slot";
+            slotElement.innerHTML = `
+                <span class="role-indicator">${orderRoles[idx]}</span>
+                <div class="p-name">?</div><div class="p-club">-</div>
+            `;
+        }
+    });
+
+    // Ripristina la griglia standard a 5 colonne per il draft nativo
+    const container = document.getElementById('draft-options-container');
+    if (container) container.style.gridTemplateColumns = "repeat(5, 1fr)";
+
+    // Fa partire la ricerca dal primo slot
+    currentDraftStep = 0;
+    advanceToNextRepairRole();
+}
+window.confirmCutsAndStartRepairDraft = confirmCutsAndStartRepairDraft;
+
+function advanceToNextRepairRole() {
+    // Scorri i ruoli: se lo slot è occupato (non null), saltalo e passa al successivo
+    while (currentDraftStep < orderRoles.length && userTeam[currentDraftStep] !== null && userTeam[currentDraftStep] !== undefined) {
+        currentDraftStep++;
+    }
+    
+    // Se abbiamo controllato tutti e 5 i ruoli e sono pieni, il mercato è finito
+    if (currentDraftStep >= orderRoles.length) {
+        closeRepairMarket();
+        return;
+    }
+
+    // Esegue la funzione nativa di GitHub per mostrare il draft del ruolo attualmente impostato in currentDraftStep
+    if (typeof renderDraftRound === 'function') {
+        renderDraftRound(); 
+    } else {
+        alert("Errore: Impossibile avviare il round di draft nativo.");
+    }
+}
+window.advanceToNextRepairRole = advanceToNextRepairRole;
+
+function closeRepairMarket() {
+    document.getElementById('draft-title-text').innerHTML = `<span>Mercato Concluso!</span>`;
+    document.getElementById('draft-options-container').innerHTML = `
+        <div style="color:#28a745; font-weight:bold; padding:20px; text-align:center; grid-column: span 5; font-size:1.1rem;">
+            Roster aggiornato con successo per il girone di ritorno!<br>
+            <span style="color:#fff; font-size:0.9rem; font-weight:normal;">Clicca su "GIOCA PARTITA" per riprendere il campionato.</span>
+        </div>
+    `;
+    
+    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
+    if(pBtn) pBtn.disabled = false;
+    
+    // Forza l'aggiornamento della classifica e del calendario nativo
+    if (typeof renderCalendarAndStandings === 'function') {
+        renderCalendarAndStandings();
+    }
+}
+window.closeRepairMarket = closeRepairMarket;
+
+// Dirotta la funzione di scelta del giocatore per farle controllare se ci sono altri ruoli tagliati da riempire
+const originalPickPlayer = window.pickPlayer;
+window.pickPlayer = function(role, encodedData) {
+    if (typeof originalPickPlayer === 'function') {
+        originalPickPlayer(role, encodedData);
+    }
+    // Dopo aver inserito il giocatore, controlla se ci sono altri slot rimasti vuoti (null) dai tagli
+    if (Object.values(userTeam).includes(null)) {
+        advanceToNextRepairRole();
+    }
+};
 
 </script>
 </body>
