@@ -3636,9 +3636,6 @@ function simulateCPUMatches(currentRound) {
 }
 
 // ==========================================
-// 6. SIMULATORE MATCH UTENTE
-// ==========================================
-// ==========================================
 // 6. SIMULATORE MATCH UTENTE (CORRETTO)
 // ==========================================
 function simMatch() {
@@ -3668,7 +3665,7 @@ function simMatch() {
         `;
     }
 
-    const playersArray = Object.values(userTeam); // I tuoi 5 giocatori del quintetto
+    const playersArray = Object.values(userTeam); 
     let userShootingLuck = (Math.random() * 16) - 8;  
     let oppShootingLuck = (Math.random() * 16) - 8;   
 
@@ -3690,7 +3687,7 @@ function simMatch() {
 
     if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
 
-    // Scegliamo l'MVP prima del calcolo per pomparlo nelle statistiche dei singoli
+    // MVP Utente e dati di picco
     let topScorer = playersArray[Math.floor(Math.random() * playersArray.length)];
     let mvpPts = Math.round((topScorer.ppg || 12) * (0.8 + Math.random() * 0.6) + (finalUserScore * 0.03));
     let mvpAst = Math.round((topScorer.apg || 3) * (0.6 + Math.random() * 0.8));
@@ -3698,8 +3695,10 @@ function simMatch() {
     let mvpStl = Math.round((topScorer.spg || 1) * (0.5 + Math.random() * 1.2));
     let mvpFullStats = `${mvpPts} PTS | ${mvpReb} REB | ${mvpAst} AST | ${mvpStl} STL`;
 
+    let cpuTopScorerIndex = Math.floor(Math.random() * (oppPlayers.length || 5));
+
     // ==========================================
-    // GENERATORE STATISTICHE DI SQUADRA
+    // ENGINE STATISTICHE SQUADRA (CON PALLE PERSE UTENTE)
     // ==========================================
     function generateTeamStats(score) {
         let t3 = Math.floor(Math.random() * 5) + 5; 
@@ -3720,30 +3719,50 @@ function simMatch() {
     }
 
     // ==========================================
-    // GENERATORE DI PUNTI REALI PER I GIOCATORI
+    // GENERATORE COMPLETO STATS COMPAGNE (PTS - REB - AST)
     // ==========================================
-    function generatePlayerPoints(totalScore, mvpPlayer, mvpPoints, roster) {
-        let remainingPoints = totalScore - mvpPoints;
-        let pointsMap = {};
+    function generateFullPlayerStats(totalScore, teamReb, teamAst, topScorerIndex, roster) {
+        let statsMap = {};
+        if (!roster || roster.length === 0) return statsMap;
+
+        // 1. Assegnazione Punti con controllo matematico sul totale
+        let starPoints = Math.round(totalScore * (0.25 + Math.random() * 0.1));
+        let remainingPoints = totalScore - starPoints;
         
-        // Assegna i punti all'MVP scelto
-        pointsMap[mvpPlayer.cognome] = mvpPoints;
-        
-        // Filtra gli altri 4 compagni di squadra
-        let altriGiocatori = roster.filter(p => p.cognome !== mvpPlayer.cognome);
-        
+        // Sganciamo anche i rimbalzi e assist per la stella
+        let starReb = Math.floor(teamReb * 0.25) + Math.floor(Math.random() * 3);
+        let starAst = Math.floor(teamAst * 0.30) + Math.floor(Math.random() * 2);
+
+        let remReb = teamReb - starReb;
+        let remAst = teamAst - starAst;
+
+        // Inizializza l'MVP / Top Scorer
+        let starPlayer = roster[topScorerIndex];
+        let starName = starPlayer.cognome || starPlayer.name || "Stella";
+        statsMap[starName] = { pts: starPoints, reb: starReb, ast: starAst };
+
+        let altriGiocatori = roster.filter((_, idx) => idx !== topScorerIndex);
+
         altriGiocatori.forEach((p, index) => {
+            let nameKey = p.cognome || p.name || `Player-${index}`;
             if (index === altriGiocatori.length - 1) {
-                // L'ultimo giocatore prende tutto quello che resta per far quadrare il totale al millimetro
-                pointsMap[p.cognome] = Math.max(0, remainingPoints);
+                statsMap[nameKey] = {
+                    pts: Math.max(0, remainingPoints),
+                    reb: Math.max(0, remReb),
+                    ast: Math.max(0, remAst)
+                };
             } else {
-                // Distribuzione casuale intelligente basata sul loro ovr
-                let share = Math.round(remainingPoints * (0.15 + (Math.random() * 0.15)));
-                pointsMap[p.cognome] = share;
-                remainingPoints -= share;
+                let pShare = Math.round(remainingPoints * (0.18 + (Math.random() * 0.15)));
+                let rShare = Math.floor(remReb * (0.15 + (Math.random() * 0.15)));
+                let aShare = Math.floor(remAst * (0.15 + (Math.random() * 0.15)));
+
+                statsMap[nameKey] = { pts: pShare, reb: rShare, ast: aShare };
+                remainingPoints -= pShare;
+                remReb -= rShare;
+                remAst -= aShare;
             }
         });
-        return pointsMap;
+        return statsMap;
     }
 
     let currentStep = 0;
@@ -3778,53 +3797,78 @@ function simMatch() {
 
             simulateCPUMatches(currentMatchNumber);
 
-            // Generiamo i tabellini di squadra e individuali
+            // Generiamo i dati di squadra globali
             const userStats = generateTeamStats(finalUserScore);
             const oppStats = generateTeamStats(finalOppScore);
-            const userPuntiGiocatori = generatePlayerPoints(finalUserScore, topScorer, mvpPts, playersArray);
 
-            // Generiamo la lista HTML dei tuoi giocatori con i punti fatti
-            let playerStatsHtml = `<div style="margin-top:6px; font-size:0.7rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
+            // Generiamo i tabellini completi (Punti, Rimbalzi, Assist) per ogni giocatore
+            const userFullScout = generateFullPlayerStats(finalUserScore, userStats.reb, userStats.ast, playersArray.indexOf(topScorer), playersArray);
+            
+            let cpuRosterMock = oppPlayers.length > 0 ? oppPlayers : [{cognome:"Play"},{cognome:"Guardia"},{cognome:"Ala"},{cognome:"Pivot"},{cognome:"Sesto"}];
+            const cpuFullScout = generateFullPlayerStats(finalOppScore, oppStats.reb, oppStats.ast, cpuTopScorerIndex, cpuRosterMock);
+
+            // Sovrascriviamo le prestazioni dell'MVP utente con quelle precise calcolate dal simulatore primario
+            if(userFullScout[topScorer.cognome]) {
+                userFullScout[topScorer.cognome] = { pts: mvpPts, reb: mvpReb, ast: mvpAst };
+            }
+
+            // COSTRUZIONE FILA GIOCATORI UTENTE (Formato compatto: PTS | REB | AST)
+            let userPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
             playersArray.forEach(p => {
-                let puntiFatti = userPuntiGiocatori[p.cognome] || 0;
-                let isMvp = p.cognome === topScorer.cognome ? " 👑 (MVP)" : "";
-                playerStatsHtml += `<div style="display:flex; justify-content:space-between; color:${isMvp ? '#ff9800':'#ccc'}; font-weight:${isMvp ? 'bold':'normal'}">
+                let scout = userFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
+                let isMvp = p.cognome === topScorer.cognome ? " 👑" : "";
+                userPlayersHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:1px; color:${isMvp ? '#ff9800':'#ccc'}; font-weight:${isMvp ? 'bold':'normal'}">
                     <span>${p.cognome}${isMvp}:</span>
-                    <span><strong>${puntiFatti}</strong> PTS</span>
+                    <span><strong>${scout.pts}</strong>P | <strong>${scout.reb}</strong>R | <strong>${scout.ast}</strong>A</span>
                 </div>`;
             });
-            playerStatsHtml += `</div>`;
+            userPlayersHtml += `</div>`;
 
-            // Costruiamo i due box affiancati
+            // COSTRUZIONE FILA GIOCATORI CPU
+            let cpuPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
+            cpuRosterMock.forEach((p, idx) => {
+                let scout = cpuFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
+                let isTop = idx === cpuTopScorerIndex ? " ⭐" : "";
+                cpuPlayersHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:1px; color:${isTop ? '#f43f5e':'#ccc'}; font-weight:${isTop ? 'bold':'normal'}">
+                    <span>${p.cognome}${isTop}:</span>
+                    <span><strong>${scout.pts}</strong>P | <strong>${scout.reb}</strong>R | <strong>${scout.ast}</strong>A</span>
+                </div>`;
+            });
+            cpuPlayersHtml += `</div>`;
+
+            // BLOCCO CSS + STRUTTURA RESPONSIVE (MEDIA QUERY AGGIUNTA)
             let statsBlockHtml = `
-                <div style="display: flex; gap: 12px; margin: 10px 0; text-align: left; font-size: 0.72rem; font-family: monospace;">
-                    <div style="flex: 1; background: rgba(40, 167, 69, 0.12); border: 1px solid rgba(40, 167, 69, 0.25); padding: 8px; border-radius: 6px;">
+                <style>
+                    .boxscore-wrapper { display: flex; gap: 12px; margin: 10px 0; text-align: left; font-size: 0.72rem; font-family: monospace; }
+                    .boxscore-card { flex: 1; padding: 8px; border-radius: 6px; }
+                    @media (max-width: 600px) {
+                        .boxscore-wrapper { flex-direction: column; gap: 10px; }
+                    }
+                </style>
+                <div class="boxscore-wrapper">
+                    <div class="boxscore-card" style="background: rgba(40, 167, 69, 0.12); border: 1px solid rgba(40, 167, 69, 0.25);">
                         <div style="color: #28a745; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🏀 LA TUA SQUADRA</div>
                         <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${userStats.t2}</strong></div>
                         <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${userStats.t3}</strong></div>
                         <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${userStats.tl}</strong></div>
                         <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${userStats.reb}</strong></div>
                         <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${userStats.ast}</strong></div>
-                        ${playerStatsHtml}
+                        <div style="display:flex; justify-content:space-between; color:#dc3545;"><span>Palle Perse:</span><strong>${userStats.palle_perse}</strong></div>
+                        ${userPlayersHtml}
                     </div>
-                    <div style="flex: 1; background: rgba(220, 53, 69, 0.12); border: 1px solid rgba(220, 53, 69, 0.25); padding: 8px; border-radius: 6px; display:flex; flex-direction:column; justify-content:between;">
-                        <div>
-                            <div style="color: #dc3545; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🤖 ${opponentName.substring(0,16)}</div>
-                            <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${oppStats.t2}</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${oppStats.t3}</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${oppStats.tl}</strong></div>
-                            <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${oppStats.reb}</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${oppStats.ast}</strong></div>
-                            <div style="display:flex; justify-content:space-between;"><span>Palle Perse:</span><strong style="color:#dc3545;">${oppStats.palle_perse}</strong></div>
-                        </div>
-                        <div style="margin-top:auto; padding-top:10px; font-size:0.65rem; color:#aaa; font-style:italic; text-align:center;">
-                            Tabellino LNP Match Sim v2.5
-                        </div>
+                    <div class="boxscore-card" style="background: rgba(220, 53, 69, 0.12); border: 1px solid rgba(220, 53, 69, 0.25);">
+                        <div style="color: #dc3545; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🤖 ${opponentName.substring(0,14).toUpperCase()}</div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${oppStats.t2}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${oppStats.t3}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${oppStats.tl}</strong></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${oppStats.reb}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${oppStats.ast}</strong></div>
+                        <div style="display:flex; justify-content:space-between; color:#dc3545;"><span>Palle Perse:</span><strong>${oppStats.palle_perse}</strong></div>
+                        ${cpuPlayersHtml}
                     </div>
                 </div>
             `;
 
-            // Aggiorna subito la classifica e invoca la caccia al contatore a destra
             renderCalendarAndStandings();
 
             if (currentMatchNumber === 19) {
