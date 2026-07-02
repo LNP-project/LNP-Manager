@@ -3889,12 +3889,8 @@ function closePlayoffBoxscore() {
 }
 window.closePlayoffBoxscore = closePlayoffBoxscore;
 
-
 // ==========================================
-// 7. SIMULATORE MATCH UTENTE REGULAR SEASON (COMPLETO)
-// ==========================================
-// ==========================================
-// 7. SIMULATORE MATCH UTENTE REGULAR SEASON (VERSIONE CORRETTA)
+// 7. SIMULATORE MATCH UTENTE REGULAR SEASON (PRECEDENTE)
 // ==========================================
 function simMatch() {
     if (currentMatchNumber > 38) {
@@ -3912,9 +3908,18 @@ function simMatch() {
     if(pBtn) pBtn.disabled = true;
 
     const oppPlayers = allPlayers.filter(p => p.club === opponentName).slice(0, 5);
-    const playersArray = Object.values(userTeam); 
+    let oppRosterNames = oppPlayers.map(p => p.cognome).join(", ");
 
-    // Calcolo Tattiche e Ritmo di Gioco
+    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
+    if(banner) {
+        banner.innerHTML = `
+            <div style="color:#ff9800; font-weight:bold; font-size:0.9rem; margin-bottom:2px;">IN CORSO VS: ${opponentName.toUpperCase()}</div>
+            <div style="font-size:0.75rem; color:#ddd; margin-bottom:6px;">Lineup CPU: ${oppRosterNames || 'Generico'}</div>
+            <div id="match-status-text">Simulazione quarti...</div>
+        `;
+    }
+
+    const playersArray = Object.values(userTeam); 
     let userShootingLuck = (Math.random() * 16) - 8;  
     let oppShootingLuck = (Math.random() * 16) - 8;   
 
@@ -3922,19 +3927,10 @@ function simMatch() {
     const selectedTactic = selectElem ? selectElem.value : '3-2';
     let matchPace = Math.round(72 + Math.random() * 12);
 
-    if (selectedTactic === '4-1') { 
-        userShootingLuck += 8; 
-        oppShootingLuck += 10; 
-    } else if (selectedTactic === 'run-gun') { 
-        matchPace += 10; 
-        userShootingLuck = (Math.random() * 24) - 12; 
-    } else if (selectedTactic === 'defense') { 
-        matchPace -= 6; 
-        oppShootingLuck -= 8; 
-        userShootingLuck -= 8;
-    }
+    if (selectedTactic === '4-1') { userShootingLuck += 8; oppShootingLuck += 10; } 
+    else if (selectedTactic === 'run-gun') { matchPace += 10; userShootingLuck = (Math.random() * 24) - 12; } 
+    else if (selectedTactic === 'defense') { matchPace -= 6; oppShootingLuck -= 8; userShootingLuck -= 8; }
 
-    // Calcolo Efficienza e Punteggi Finali
     const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
     const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
     let finalUserScore = Math.round(matchPace * userEfficiency);
@@ -3943,286 +3939,227 @@ function simMatch() {
     const oppEfficiency = 0.70 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
     let finalOppScore = Math.round(matchPace * oppEfficiency);
 
-    if (finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 2 : -2;
+    if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
 
-    let isWin = finalUserScore > finalOppScore;
-    myMatch.score = `${finalUserScore} - ${finalOppScore}`;
-    myMatch.simulated = true;
+    let topScorer = playersArray[Math.floor(Math.random() * playersArray.length)];
+    let mvpPts = Math.round((topScorer.ppg || 12) * (0.8 + Math.random() * 0.6) + (finalUserScore * 0.03));
+    let mvpAst = Math.round((topScorer.apg || 3) * (0.6 + Math.random() * 0.8));
+    let mvpReb = Math.round((topScorer.rpg || 4) * (0.5 + Math.random() * 1.0));
+    let mvpStl = Math.round((topScorer.spg || 1) * (0.5 + Math.random() * 1.2));
+    let mvpFullStats = `${mvpPts} PTS | ${mvpReb} REB | ${mvpAst} AST | ${mvpStl} STL`;
 
-    if(isWin) {
-        standings["La Tua Squadra"].wins++; standings["La Tua Squadra"].points += 2; userWins++;
-    } else {
-        standings["La Tua Squadra"].losses++; userLosses++;
+    let cpuTopScorerIndex = Math.floor(Math.random() * (oppPlayers.length || 5));
+
+    function generateTeamStats(score) {
+        let t3 = Math.floor(Math.random() * 5) + 5; 
+        let tl = Math.floor(Math.random() * 8) + 6; 
+        let rest = score - (t3 * 3) - tl;
+        let t2 = Math.max(0, Math.round(rest / 2));
+        
+        let scarto = score - ((t3 * 3) + (t2 * 2) + tl);
+        tl += scarto; 
+
+        let t2_att = t2 + Math.floor(Math.random() * 10) + 8;
+        let t3_att = t3 + Math.floor(Math.random() * 12) + 10;
+        
+        return {
+            t2: `${t2}/${t2_att} (${Math.round((t2/t2_att)*100)}%)`,
+            t3: `${t3}/${t3_att} (${Math.round((t3/t3_att)*100)}%)`,
+            tl: `${tl}/${Math.max(tl, tl + Math.floor(Math.random()*5))}`,
+            reb: Math.floor(Math.random() * 12) + 26,
+            ast: Math.min(t2 + t3 - 1, Math.floor(Math.random() * 8) + 12),
+            palle_perse: Math.floor(Math.random() * 5) + 8
+        };
     }
-    simulateCPUMatches(currentMatchNumber);
 
-    // =======================================================
-    // GENERAZIONE STATISTICHE DETTAGLIATE TEAM UTENTE
-    // =======================================================
-    let userT2Made = Math.round(10 + Math.random() * 10);
-    let userT2Att = userT2Made + Math.round(5 + Math.random() * 10);
-    let userT3Made = Math.round(5 + Math.random() * 8);
-    let userT3Att = userT3Made + Math.round(10 + Math.random() * 15);
-    let userFtMade = Math.round(5 + Math.random() * 10);
-    let userFtAtt = userFtMade + Math.round(2 + Math.random() * 5);
-    
-    let userTotReb = Math.round(28 + Math.random() * 15);
-    let userTotAst = Math.round(10 + Math.random() * 12);
-    let userTotStl = Math.round(4 + Math.random() * 8);
+    function generateFullPlayerStats(totalScore, teamReb, teamAst, topScorerIndex, roster) {
+        let statsMap = {};
+        if (!roster || roster.length === 0) return statsMap;
 
-    let userPlayersHtml = "";
-    let realMvpName = playersArray[0].cognome;
-    let maxPts = -1;
-
-    playersArray.forEach(p => {
-        let pPts = Math.round((p.ppg || 12) * (0.6 + Math.random() * 0.8) + (finalUserScore * 0.015));
-        let pReb = Math.round((p.rpg || 4) * (0.5 + Math.random() * 1.0));
-        let pAst = Math.round((p.apg || 3) * (0.5 + Math.random() * 1.0));
+        let starPoints = Math.round(totalScore * (0.25 + Math.random() * 0.1));
+        let remainingPoints = totalScore - starPoints;
         
-        if (pPts > maxPts) { maxPts = pPts; realMvpName = p.cognome; }
+        let starReb = Math.floor(teamReb * 0.25) + Math.floor(Math.random() * 3);
+        let starAst = Math.floor(teamAst * 0.30) + Math.floor(Math.random() * 2);
 
-        userPlayersHtml += `
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#fff; padding:2px 0;">
-                <span>${p.cognome} ${p.cognome === realMvpName ? '👑' : ''}:</span>
-                <span>${pPts}P | ${pReb}R | ${pAst}A</span>
-            </div>
-        `;
+        let remReb = teamReb - starReb;
+        let remAst = teamAst - starAst;
 
-        const key = `${p.cognome}_${p.club}`;
-        if(playerStatsStore[key]) {
-            playerStatsStore[key].gamesPlayed++;
-            playerStatsStore[key].totalPoints += pPts;
-            playerStatsStore[key].avgPoints = parseFloat((playerStatsStore[key].totalPoints / playerStatsStore[key].gamesPlayed).toFixed(1));
-        }
-    });
+        let starPlayer = roster[topScorerIndex];
+        let starName = starPlayer.cognome || starPlayer.name || "Stella";
+        statsMap[starName] = { pts: starPoints, reb: starReb, ast: starAst };
 
-    // =======================================================
-    // GENERAZIONE STATISTICHE DETTAGLIATE TEAM CPU
-    // =======================================================
-    let oppT2Made = Math.round(10 + Math.random() * 10);
-    let oppT2Att = oppT2Made + Math.round(5 + Math.random() * 10);
-    let oppT3Made = Math.round(5 + Math.random() * 8);
-    let oppT3Att = oppT3Made + Math.round(10 + Math.random() * 15);
-    let oppFtMade = Math.round(5 + Math.random() * 10);
-    let oppFtAtt = oppFtMade + Math.round(2 + Math.random() * 5);
-    
-    let oppTotReb = Math.round(28 + Math.random() * 15);
-    let oppTotAst = Math.round(10 + Math.random() * 12);
-    let oppTotStl = Math.round(4 + Math.random() * 8);
+        let altriGiocatori = roster.filter((_, idx) => idx !== topScorerIndex);
 
-    let oppPlayersHtml = "";
-    oppPlayers.forEach(p => {
-        let pPts = Math.round((p.ppg || 11) * (0.6 + Math.random() * 0.8) + (finalOppScore * 0.015));
-        let pReb = Math.round((p.rpg || 4) * (0.5 + Math.random() * 1.0));
-        let pAst = Math.round((p.apg || 3) * (0.5 + Math.random() * 1.0));
-        oppPlayersHtml += `
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#fff; padding:2px 0;">
-                <span>${p.cognome}:</span>
-                <span>${pPts}P | ${pReb}R | ${pAst}A</span>
-            </div>
-        `;
-    });
+        altriGiocatori.forEach((p, index) => {
+            let nameKey = p.cognome || p.name || `Player-${index}`;
+            if (index === altriGiocatori.length - 1) {
+                statsMap[nameKey] = {
+                    pts: Math.max(0, remainingPoints),
+                    reb: Math.max(0, remReb),
+                    ast: Math.max(0, remAst)
+                };
+            } else {
+                let pShare = Math.round(remainingPoints * (0.18 + (Math.random() * 0.15)));
+                let rShare = Math.floor(remReb * (0.15 + (Math.random() * 0.15)));
+                let aShare = Math.floor(remAst * (0.15 + (Math.random() * 0.15)));
 
-    // Ticker Live dei Quarti
-    let quarter = 1;
-    let liveTimer = setInterval(() => {
-        const txt = document.getElementById('match-status-text');
-        if(!txt) { clearInterval(liveTimer); return; }
+                statsMap[nameKey] = { pts: pShare, reb: rShare, ast: aShare };
+                remainingPoints -= pShare;
+                remReb -= rShare;
+                remAst -= aShare;
+            }
+        });
+        return statsMap;
+    }
+
+    let currentStep = 0;
+    const totalSteps = 10;
+    const interval = setInterval(() => {
+        currentStep++;
+        let currentLiveUser = Math.round((finalUserScore / totalSteps) * currentStep);
+        let currentLiveOpp = Math.round((finalOppScore / totalSteps) * currentStep);
         
-        if (quarter <= 4) {
-            txt.innerHTML = `<span style="color:#ff9800; font-weight:bold;">QUARTO ${quarter} IN CORSO...</span>`;
-            quarter++;
-        } else {
-            clearInterval(liveTimer);
+        const ticker = document.getElementById('live-simulation-ticker');
+        if(ticker) ticker.innerText = `LIVE GARA ${currentMatchNumber}: La Tua Squadra ${currentLiveUser} - ${currentLiveOpp} ${opponentName}`;
+
+        if (currentStep >= totalSteps) {
+            clearInterval(interval); 
+            
+            myMatch.score = `${finalUserScore} - ${finalOppScore}`;
+            myMatch.simulated = true;
+
+            let isUserWin = finalUserScore > finalOppScore;
+            let resultColor = isUserWin ? "#28a745" : "#dc3545";
+            let resultLabel = isUserWin ? "VITTORIA" : "SCONFITTA";
+
+            if (isUserWin) {
+                userWins++;
+                standings["La Tua Squadra"].wins++; standings["La Tua Squadra"].points += 2;
+                standings[opponentName].losses++;
+            } else {
+                userLosses++;
+                standings[opponentName].wins++; standings[opponentName].points += 2;
+                standings["La Tua Squadra"].losses++;
+            }
+
+            simulateCPUMatches(currentMatchNumber);
+
+            const userStats = generateTeamStats(finalUserScore);
+            const oppStats = generateTeamStats(finalOppScore);
+
+            const userFullScout = generateFullPlayerStats(finalUserScore, userStats.reb, userStats.ast, playersArray.indexOf(topScorer), playersArray);
+            
+            let cpuRosterMock = oppPlayers.length > 0 ? oppPlayers : [{cognome:"Play"},{cognome:"Guardia"},{cognome:"Ala"},{cognome:"Pivot"},{cognome:"Sesto"}];
+            const cpuFullScout = generateFullPlayerStats(finalOppScore, oppStats.reb, oppStats.ast, cpuTopScorerIndex, cpuRosterMock);
+
+            let realMvpName = playersArray[0].cognome;
+            let maxPts = -1;
+            playersArray.forEach(p => {
+                let scout = userFullScout[p.cognome] || { pts: 0 };
+                if (scout.pts > maxPts) { maxPts = scout.pts; realMvpName = p.cognome; }
+            });
+
+            let realMvpStats = userFullScout[realMvpName] || { pts: 0, reb: 0, ast: 0 };
+            mvpFullStats = `${realMvpStats.pts} PTS | ${realMvpStats.reb} REB | ${realMvpStats.ast} AST`;
+
+            let userPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
+            playersArray.forEach(p => {
+                let scout = userFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
+                let isMvp = p.cognome === realMvpName;
+                let icon = isMvp ? " 👑" : "";
+                userPlayersHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:1px; color:${isMvp ? '#ff9800':'#ccc'}; font-weight:${isMvp ? 'bold':'normal'}">
+                    <span>${p.cognome}${icon}:</span>
+                    <span><strong>${scout.pts}</strong>P | <strong>${scout.reb}</strong>R | <strong>${scout.ast}</strong>A</span>
+                </div>`;
+            });
+            userPlayersHtml += `</div>`;
+
+            let cpuPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
+            cpuRosterMock.forEach((p, idx) => {
+                let scout = cpuFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
+                let isTop = idx === cpuTopScorerIndex ? " ⭐" : "";
+                cpuPlayersHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:1px; color:${isTop ? '#f43f5e':'#ccc'}; font-weight:${isTop ? 'bold':'normal'}">
+                    <span>${p.cognome}${isTop}:</span>
+                    <span><strong>${scout.pts}</strong>P | <strong>${scout.reb}</strong>R | <strong>${scout.ast}</strong>A</span>
+                </div>`;
+            });
+            cpuPlayersHtml += `</div>`;
+
+            let statsBlockHtml = `
+                <div class="boxscore-wrapper" style="display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; text-align: left; font-size: 0.72rem; font-family: monospace;">
+                    <div class="boxscore-card" style="flex: 1; min-width: 240px; background: rgba(40, 167, 69, 0.12); border: 1px solid rgba(40, 167, 69, 0.25); padding: 8px; border-radius: 6px;">
+                        <div style="color: #28a745; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🏀 LA TUA SQUADRA</div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${userStats.t2}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${userStats.t3}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${userStats.tl}</strong></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${userStats.reb}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${userStats.ast}</strong></div>
+                        <div style="display:flex; justify-content:space-between; color:#dc3545;"><span>Palle Perse:</span><strong>${userStats.palle_perse}</strong></div>
+                        ${userPlayersHtml}
+                    </div>
+                    <div class="boxscore-card" style="flex: 1; min-width: 240px; background: rgba(220, 53, 69, 0.12); border: 1px solid rgba(220, 53, 69, 0.25); padding: 8px; border-radius: 6px;">
+                        <div style="color: #dc3545; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🤖 ${opponentName.substring(0,14).toUpperCase()}</div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${oppStats.t2}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${oppStats.t3}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${oppStats.tl}</strong></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${oppStats.reb}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${oppStats.ast}</strong></div>
+                        <div style="display:flex; justify-content:space-between; color:#dc3545;"><span>Palle Perse:</span><strong>${oppStats.palle_perse}</strong></div>
+                        ${cpuPlayersHtml}
+                    </div>
+                </div>
+            `;
+
             renderCalendarAndStandings();
 
-            const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
-            if(banner) {
-                let resultColor = isWin ? "#28a745" : "#dc3545";
-                let resultLabel = isWin ? "VITTORIA" : "SCONFITTA";
-
-                // COSTRUZIONE DEL CASSETTONE GRAFICO (IDENTICO AL TUO SCREENSHOT)
-                let boxscoreHtml = `
-                    <div style="font-size:1.4rem; color:${resultColor} !important; font-weight:bold; text-align:center; margin-bottom:10px;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
-                    
-                    <div style="background:rgba(40,167,69,0.1); border:1px solid rgba(40,167,69,0.3); padding:8px; border-radius:6px; margin-bottom:8px; text-align:left;">
-                        <div style="color:#28a745; font-weight:bold; font-size:0.85rem; margin-bottom:4px;">🏀 LA TUA SQUADRA</div>
-                        <div style="font-size:0.7rem; color:#aaa; display:grid; grid-template-columns: 1fr 1fr; gap:2px; margin-bottom:6px;">
-                            <span>Tiri da 2: <strong>${userT2Made}/${userT2Att} (${Math.round((userT2Made/userT2Att)*100)}%)</strong></span>
-                            <span>Rimbalzi: <strong>${userTotReb}</strong></span>
-                            <span>Tiri da 3: <strong>${userT3Made}/${userT3Att} (${Math.round((userT3Made/userT3Att)*100)}%)</strong></span>
-                            <span>Assist: <strong>${userTotAst}</strong></span>
-                            <span>Liberi: <strong>${userFtMade}/${userFtAtt}</strong></span>
-                            <span>Palle Perse: <span style="color:#dc3545;">${userTotStl}</span></span>
-                        </div>
-                        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
-                            ${userPlayersHtml}
-                        </div>
-                    </div>
-
-                    <div style="background:rgba(220,53,69,0.1); border:1px solid rgba(220,53,69,0.3); padding:8px; border-radius:6px; margin-bottom:10px; text-align:left;">
-                        <div style="color:#dc3545; font-weight:bold; font-size:0.85rem; margin-bottom:4px;">🤖 ${opponentName.toUpperCase()}</div>
-                        <div style="font-size:0.7rem; color:#aaa; display:grid; grid-template-columns: 1fr 1fr; gap:2px; margin-bottom:6px;">
-                            <span>Tiri da 2: <strong>${oppT2Made}/${oppT2Att} (${Math.round((oppT2Made/oppT2Att)*100)}%)</strong></span>
-                            <span>Rimbalzi: <strong>${oppTotReb}</strong></span>
-                            <span>Tiri da 3: <strong>${oppT3Made}/${oppT3Att} (${Math.round((oppT3Made/oppT3Att)*100)}%)</strong></span>
-                            <span>Assist: <strong>${oppTotAst}</strong></span>
-                            <span>Liberi: <strong>${oppFtMade}/${oppFtAtt}</strong></span>
-                            <span>Palle Perse: <span style="color:#dc3545;">${oppTotStl}</span></span>
-                        </div>
-                        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
-                            ${oppPlayersHtml}
-                        </div>
-                    </div>
-
-                    <div style="font-size:0.75rem; color:#ff9800; text-align:center; margin:6px 0; font-weight:bold;">⭐ PERCORSO MVP: ${realMvpName} (${maxPts} PTS)</div>
-                `;
-
-                // BIVIO DI FINE PARTITA: SE GARA 19, MOSTRA IL TASTO ARANCIONE DEL MERCATO
-                if (currentMatchNumber === 19) {
-                    banner.innerHTML = boxscoreHtml + `
-                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.15); margin:6px 0;">
-                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; font-size:0.9rem; text-transform:uppercase;">Apri Mercato Di Riparazione 🔄</button>
+            if (currentMatchNumber === 19) {
+                if(banner) {
+                    banner.innerHTML = `
+                        <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                        ${statsBlockHtml}
+                        <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
+                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
+                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
                     `;
-                } else if (currentMatchNumber === 38) {
-                    banner.innerHTML = boxscoreHtml + `
-                        <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; text-transform:uppercase;">Accedi Ai Playoff LNP ➔</button>
-                    `;
-                    currentMatchNumber++;
-                } else {
-                    banner.innerHTML = boxscoreHtml + `
-                        <button onclick="closeBoxscore()" style="background:#1a365d; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; text-transform:uppercase;">Avanza al prossimo turno ➔</button>
-                    `;
-                    currentMatchNumber++;
                 }
+                currentMatchNumber++;
+                return;
             }
+
+            if (currentMatchNumber === 38) {
+                if(banner) {
+                    banner.innerHTML = `
+                        <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                        ${statsBlockHtml}
+                        <div style="font-size:1.15rem; color:#ff9800; font-weight:bold; margin-top:5px;">REGULAR SEASON TERMINATA!</div>
+                        <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">ACCEDI AI PLAYOFF LNP ➔</button>
+                    `;
+                }
+                currentMatchNumber++;
+                return;
+            }
+
+            if(banner) {
+                banner.innerHTML = `
+                    <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                    ${statsBlockHtml}
+                    <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
+                    <button onclick="closeBoxscore()" style="background: #1a365d; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">AVANZA AL PROSSIMO TURNO ➔</button>
+                `;
+            }
+            currentMatchNumber++;
         }
     }, 120);
 }
+
 
 function closeBoxscore() {
     document.getElementById('main-game-viewport').classList.remove('game-mode');
     const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
     if(pBtn) pBtn.disabled = false;
+    updateMatchBanner();
 }
-
-function startMidSeasonMarket() {
-    closeBoxscore();
-    currentMatchNumber = 20; 
-    alert("🔄 Mercato di riparazione sbloccato!\n\nFai i tuoi scambi nella scheda Mercato del gioco.\nAl prossimo click su 'GIOCA PARTITA' ripartirai con la Gara 20!");
-    if(typeof renderCalendarAndStandings === "function") renderCalendarAndStandings();
-}
-// ==========================================
-// 8. INTERFACCIA VISIVA INTERATTIVA DEL MERCATO DI RIPARAZIONE
-// ==========================================
-function showMarketScreen() {
-    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
-    if (!banner) return;
-
-    // Generiamo 3 giocatori svincolati casuali non presenti nel team dell'utente
-    const currentCognomi = Object.values(userTeam).map(p => p.cognome);
-    let pool = allPlayers.filter(p => p && p.cognome && !currentCognomi.includes(p.cognome));
-    let marketChoices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 3);
-
-    let html = `
-        <div style="text-align:left; color:#fff;">
-            <h3 style="color:#ff9800; margin-top:0; border-bottom:1px solid #ff9800; padding-bottom:4px;">🔄 MERCATO DI RIPARAZIONE LNP</h3>
-            <p style="font-size:0.8rem; color:#ccc; margin-bottom:10px;">Scegli quale giocatore della tua squadra attuale vuoi **tagliare (sostituire)**:</p>
-            
-            <select id="market-cut-select" style="width:100%; padding:8px; background:#0f2439; color:#fff; border:1px solid #1e3d59; border-radius:4px; margin-bottom:12px; font-weight:bold;">
-    `;
-    
-    // Elenca i 5 giocatori attuali nel menu a tendina
-    Object.keys(userTeam).forEach(slotIndex => {
-        let p = userTeam[slotIndex];
-        html += `<option value="${slotIndex}">Slot ${parseInt(slotIndex)+1}: ${p.cognome} (${p.club}) - OVR ${p.ovr || 75}</option>`;
-    });
-
-    html += `
-            </select>
-            <p style="font-size:0.8rem; color:#ccc; margin-bottom:6px;">Scegli il **nuovo innesto** da firmare per il girone di ritorno:</p>
-            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
-    `;
-
-    // Genera le card radio per i candidati del mercato
-    marketChoices.forEach((player, idx) => {
-        const safePlayer = encodeURIComponent(JSON.stringify(player));
-        html += `
-            <label style="display:block; background:rgba(255,255,255,0.05); border:1px solid #1e3d59; padding:8px; border-radius:6px; cursor:pointer;">
-                <input type="radio" name="market-sign-radio" value="${safePlayer}" ${idx === 0 ? 'checked' : ''} style="margin-right:8px; accent-color:#ff9800;">
-                <strong style="color:#ff9800;">${player.cognome}</strong> (${player.club}) | OVR: <strong>${player.ovr || 74}</strong>
-                <div style="font-size:0.7rem; color:#aaa; margin-left:22px;">Media: ${player.ppg || 0} PTS | ${player.rpg || 0} REB</div>
-            </label>
-        `;
-    });
-
-    html += `
-            </div>
-            <button onclick="executeTransaction()" style="background:#28a745; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; font-size:0.95rem; text-transform:uppercase;">Conferma Scambio & Riparti ➔</button>
-        </div>
-    `;
-
-    banner.innerHTML = html;
-}
-
-function executeTransaction() {
-    const slotToCut = document.getElementById('market-cut-select').value;
-    const radioSelected = document.querySelector('input[name="market-sign-radio"]:checked');
-    
-    if(!radioSelected) {
-        alert("Seleziona un giocatore da firmare!");
-        return;
-    }
-
-    const newPlayer = JSON.parse(decodeURIComponent(radioSelected.value));
-    const oldPlayer = userTeam[slotToCut];
-
-    // Aggiorna il Roster Ufficiale
-    userTeam[slotToCut] = newPlayer;
-
-    // Aggiorna visivamente il campo di gioco (Court Preview)
-    const slotElement = document.getElementById(`court-slot-${slotToCut}`);
-    if (slotElement) {
-        const roleIndicator = slotElement.querySelector('.role-indicator')?.innerText || 'CAD';
-        slotElement.innerHTML = `
-            <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${roleIndicator}</span>
-            <div class="p-name" style="color:#ff9800; font-weight:bold;">${newPlayer.cognome}</div>
-            <div class="p-club">${newPlayer.club}</div>
-            <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${newPlayer.ppg || 0} | A: ${newPlayer.apg || 0}</div>
-        `;
-    }
-
-    alert(`Transazione completata!\nTagliato: ${oldPlayer.cognome}\nFirmato: ${newPlayer.cognome}`);
-    
-    // Chiude il boxscore, sblocca la UI e prepara la Gara 20
-    closeBoxscore();
-}
-// NUOVA FUNZIONE: Gestisce il click sul pulsante del mercato di riparazione
-function startMidSeasonMarket() {
-    // 1. Chiudiamo il boxscore della partita per liberare lo schermo
-    closeBoxscore();
-    
-    // 2. Forza l'avanzamento del contatore a 20 per uscire dal loop di sosta della gara 19
-    currentMatchNumber = 20; 
-
-    // 3. Esegui la logica per mostrare il mercato di riparazione
-    // Nota: Se avevi un'altra funzione specifica per la UI del mercato, chiamala qui.
-    if (typeof showMarketScreen === "function") {
-        showMarketScreen(); 
-    } else {
-        // Soluzione di fallback se la schermata del mercato è gestita diversamente
-        const marketTab = document.getElementById('tab-market') || document.querySelector('[data-tab="market"]');
-        if (marketTab) {
-            marketTab.click(); // Simula il click sulla scheda del mercato
-        } else {
-            alert("Mercato di riparazione aperto! Gestisci i tuoi scambi nella scheda Mercato.");
-        }
-    }
-    
-    // 4. Aggiorna i banner di gioco per mostrare il prossimo turno (Gara 20)
-    if(typeof updateMatchBanner === "function") updateMatchBanner();
-}
-
 
 </script>
 </body>
