@@ -3507,8 +3507,30 @@ function pickPlayer(role, encodedData) {
 
 // 4. FIX COLORI E RIGENERAZIONE CONTENITORI (BLINDATO)
 // ==========================================
+// ==========================================
+// 4. FIX DEFINITIVO: AGGIORNAMENTO COUNTER COLONNA DESTRA
+// ==========================================
 function renderCalendarAndStandings() {
-    // Cerca il container usando esattamente i tuoi tre selettori fallback originali
+    // 1. AGGIORNAMENTO CONTATORE IN ALTO A DESTRA (SOPRA IL DIARIO DI BORDO)
+    try {
+        // Cerchiamo tutti gli elementi della pagina per trovare la testata del pannello a destra
+        const allElements = Array.from(document.querySelectorAll('div, h2, h3, h4, .panel-title, .widget-title'));
+        const pannelloSquadraEl = allElements.find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
+
+        if (pannelloSquadraEl && pannelloSquadraEl.parentNode) {
+            // Cerchiamo il testo con il pattern "Numero - Numero" nel box del Pannello Squadra
+            const counterTarget = Array.from(pannelloSquadraEl.parentNode.querySelectorAll('div, p, span'))
+                .find(el => el.innerText && el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/));
+            
+            if (counterTarget) {
+                counterTarget.innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
+            }
+        }
+    } catch (err) {
+        console.log("Errore aggiornamento counter pannello:", err);
+    }
+
+    // 2. GENERAZIONE DEL CONTENITORE CALENDARIO/CLASSIFICA
     const container = document.getElementById('calendar-render-box') || 
                       document.querySelector('.calendar-list') || 
                       document.querySelector('.calendar-item')?.parentNode;
@@ -3520,7 +3542,7 @@ function renderCalendarAndStandings() {
 
     let html = "";
 
-    // 1. GENERAZIONE CLASSIFICA LIVE
+    // CLASSIFICA LIVE
     html += `<div style="background: rgba(255,255,255,0.05) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
         <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
         <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
@@ -3535,7 +3557,7 @@ function renderCalendarAndStandings() {
     });
     html += `</div></div>`;
 
-    // 2. GENERAZIONE DIARIO DI BORDO
+    // RISULTATI E DIARIO DI BORDO
     html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
     html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
     
@@ -3549,13 +3571,11 @@ function renderCalendarAndStandings() {
 
         if (myMatch.score) {
             let scores = myMatch.score.split(" - ");
-            let userScore = parseInt(scores[0]); // Primo elemento = Sempre Utente
-            let oppScore = parseInt(scores[1]);  // Secondo elemento = Sempre CPU
+            let userScore = parseInt(scores[0]); 
+            let oppScore = parseInt(scores[1]);  
             
-            // Logica matematica pura sul vincitore reale per assegnare la classe CSS
             cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
 
-            // Costruisci il testo visivo mantenendo l'ordine standard Casa - Trasferta
             if (myMatch.home === "La Tua Squadra") {
                 resText = `${userScore} - ${oppScore}`;
             } else {
@@ -3563,7 +3583,6 @@ function renderCalendarAndStandings() {
             }
         }
 
-        // Output HTML pulito usando le classi CSS iniettate
         html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
             <div><strong>Gara ${giornata.round}:</strong> ${myMatch.home === "La Tua Squadra" ? "VS" : "@"} ${vsTeam}</div>
             <div class="${cssClass}" style="font-family: monospace; font-size: 0.9rem;">${resText}</div>
@@ -3571,17 +3590,8 @@ function renderCalendarAndStandings() {
     });
     html += `</div>`;
 
-    // Rianimiamo il box iniettando tutto l'HTML generato
     container.innerHTML = html;
-
-    
-
-    // ==========================================
-    // 3. AGGIORNAMENTO AGGRESSIVO DEL CONTATORE "PANNELLO SQUADRA"
-    // ==========================================
-    
-    // Tentativo 1: Selettore chirurgico basato sulla struttura del Pannello Squadra
-    // ==========================================
+}
     // 3. AGGIORNAMENTO DEL CONTATORE PANNELLO SQUADRA (VERSIONE NUMERO CERCASI)
     // ==========================================
     
