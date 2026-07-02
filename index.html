@@ -3445,76 +3445,169 @@ function updateCourtPreview() {
 }
 window.updateCourtPreview = updateCourtPreview;
 
+// ==========================================
+// INTERFACCIA APRI MERCATO (MAX 2 TAGLI)
+// ==========================================
 function startDraftProcess() {
     const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
-    if(selectElem) {
-        selectElem.disabled = true;
-        const tactic = selectElem.value;
-        orderRoles = (tactic === '4-1') ? ['PG', 'SG', 'SG', 'SF', 'C'] :
-                     (tactic === 'run-gun') ? ['PG', 'SG', 'SF', 'SF', 'PF'] :
-                     (tactic === 'defense') ? ['PG', 'SF', 'PF', 'C', 'C'] : ['PG', 'SG', 'SF', 'PF', 'C'];
-    }
+    if(selectElem) selectElem.disabled = true;
+    
     const sBtn = document.getElementById('btn-start-draft') || document.querySelector('button[onclick*="startDraft"]');
     if(sBtn) sBtn.disabled = true;
-    
-    currentDraftStep = 0;
-    userTeam = {};
-    updateCourtPreview();
-    renderDraftRound();
+
+    // Se siamo all'inizio del campionato (Gara 1), facciamo il draft totale classico
+    if (currentMatchNumber <= 1) {
+        initChampionshipData();
+        generatePerfectSchedule();
+        currentDraftStep = 0;
+        userTeam = {};
+        renderDraftRound();
+        return;
+    }
+
+    // SE SIAMO A METÀ STAGIONE: Attiviamo la finestra dei tagli (Max 2)
+    playersToCut = []; // Reset tagli
+    openMarketCutInterface();
 }
 window.startDraftProcess = startDraftProcess;
 
-function renderDraftRound() {
-    if(currentDraftStep >= orderRoles.length) {
-        document.getElementById('draft-title-text').innerHTML = `<span style="color:#ffffff !important;">Draft Completato!</span>`;
-        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745 !important; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Roster pronto! Clicca su "GIOCA PARTITA".</div>';
-        generatePerfectSchedule(); 
+function openMarketCutInterface() {
+    const container = document.getElementById('draft-options-container');
+    if (!container) return;
+
+    document.getElementById('draft-title-text').innerHTML = `
+        <span style="color:#ffffff !important;">Mercato di Riparazione: </span>
+        <span style="color:#ff9800 !important; font-weight:bold;">Scegli chi tagliare (Max 2)</span>
+    `;
+
+    container.innerHTML = '';
+    // Cambiamo il layout temporaneamente per mostrare i nostri giocatori in fila
+    container.style.gridTemplateColumns = "repeat(auto-fit, minmax(180px, 1fr))";
+
+    orderRoles.forEach((role, idx) => {
+        const player = userTeam[idx];
+        if (!player) return;
+
+        const card = document.createElement('div');
+        card.className = 'draft-option-card';
+        card.id = `cut-card-${idx}`;
+        
+        card.innerHTML = `
+            <div style="margin-bottom:8px;">
+                <div style="color:#ff9800 !important; font-size:1.1rem !important; font-weight:bold !important;">${player.cognome}</div>
+                <div style="font-size:0.8rem; color:#cbd5e0;">${role} - ${player.club}</div>
+            </div>
+            <button id="btn-cut-${idx}" style="background:#dc3545 !important; color:#ffffff !important; border:none !important; padding:8px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important; font-size:0.8rem !important;" 
+                onclick="togglePlayerCut(${idx})">Taglia Giocatore</button>
+        `;
+        container.appendChild(card);
+    });
+
+    // Aggiungiamo un bottone in fondo per confermare i tagli e andare al draft riparazione
+    const confirmDiv = document.createElement('div');
+    confirmDiv.style.gridColumn = "1 / -1";
+    confirmDiv.style.textAlign = "center";
+    confirmDiv.style.marginTop = "15px";
+    confirmDiv.innerHTML = `
+        <button onclick="confirmCutsAndStartRepairDraft()" style="background:#28a745 !important; color:white; border:none; padding:12px 25px; border-radius:6px; font-weight:bold; font-size:1rem; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+            Conferma e Cerca Sostituti ➔
+        </button>
+    `;
+    container.appendChild(confirmDiv);
+}
+
+function togglePlayerCut(idx) {
+    const card = document.getElementById(`cut-card-${idx}`);
+    const btn = document.getElementById(`btn-cut-${idx}`);
+    
+    if (playersToCut.includes(idx)) {
+        // Annulla taglio
+        playersToCut = playersToCut.filter(id => id !== idx);
+        card.style.border = "2px solid #1e3d59";
+        card.style.background = "#0f2439";
+        btn.innerText = "Taglia Giocatore";
+        btn.style.background = "#dc3545";
+    } else {
+        // Verifica limite di massimo 2 tagli
+        if (playersToCut.length >= 2) {
+            alert("Puoi tagliare al massimo 2 giocatori!");
+            return;
+        }
+        // Applica taglio
+        playersToCut.push(idx);
+        card.style.border = "2px solid #dc3545";
+        card.style.background = "#2d161a";
+        btn.innerText = "Tagliato (Clicca per annullare)";
+        btn.style.background = "#6c757d";
+    }
+}
+window.togglePlayerCut = togglePlayerCut;
+
+function confirmCutsAndStartRepairDraft() {
+    if (playersToCut.length === 0) {
+        alert("Non hai tagliato nessuno. La tua squadra resta invariata!");
+        // Riattiva il bottone gioca e sblocca il flusso
+        document.getElementById('draft-title-text').innerHTML = `<span style="color:#ffffff !important;">Mercato Concluso!</span>`;
+        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745 !important; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Nessuna modifica al Roster. Clicca su "GIOCA PARTITA".</div>';
+        const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
+        if(pBtn) pBtn.disabled = false;
+        return;
+    }
+
+    // Svuota effettivamente i posti dei giocatori tagliati nel team e sul campo visivo
+    playersToCut.forEach(idx => {
+        userTeam[idx] = null; 
+        const slotElement = document.getElementById(`court-slot-${idx}`);
+        if (slotElement) {
+            const role = orderRoles[idx];
+            slotElement.className = "court-player-slot";
+            slotElement.innerHTML = `
+                <span class="role-indicator">${role}</span>
+                <div class="p-name">?</div><div class="p-club">-</div>
+            `;
+        }
+    });
+
+    // Ripristina il layout a griglia normale per le card del draft
+    const container = document.getElementById('draft-options-container');
+    if (container) container.style.gridTemplateColumns = "repeat(5, 1fr)";
+
+    // Avvia la catena del draft partendo dal primo ruolo che risulta vuoto (null)
+    currentDraftStep = 0;
+    advanceToNextRepairRole();
+}
+window.confirmCutsAndStartRepairDraft = confirmCutsAndStartRepairDraft;
+
+function advanceToNextRepairRole() {
+    // Cerca il primo slot libero (null) rimasto dopo i tagli
+    while (currentDraftStep < orderRoles.length && userTeam[currentDraftStep] !== null) {
+        currentDraftStep++;
+    }
+    
+    // Se non ci sono più slot liberi, il draft di riparazione è finito!
+    if (currentDraftStep >= orderRoles.length) {
+        document.getElementById('draft-title-text').innerHTML = `<span style="color:#ffffff !important;">Mercato di Riparazione Completato!</span>`;
+        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745 !important; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Nuovi innesti pronti! Clicca su "GIOCA PARTITA".</div>';
         
         const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
         if(pBtn) pBtn.disabled = false;
         
+        renderCalendarAndStandings();
         return;
     }
-    const activeRole = orderRoles[currentDraftStep];
-    document.getElementById('draft-title-text').innerHTML = `<span style="color:#ffffff !important;">Fase ${currentDraftStep + 1}: Scegli il tuo </span><span style="color:#ff9800 !important; font-weight:bold;">${activeRole}</span>`;
 
-    let pool = (activeRole === 'SG') ? allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG') : allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
-    const currentSelectedCognomi = Object.values(userTeam).map(p => p ? p.cognome : "");
-    pool = pool.filter(p => p && p.cognome && !currentSelectedCognomi.includes(p.cognome));
-
-    let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
-    const container = document.getElementById('draft-options-container');
-    container.innerHTML = '';
-
-    choices.forEach(player => {
-        const card = document.createElement('div');
-        card.className = 'draft-option-card';
-        const safeString = encodeURIComponent(JSON.stringify(player));
-        
-        card.innerHTML = `
-            <div style="margin-bottom:8px;">
-                <div style="color:#ff9800 !important; font-size:1.2rem !important; font-weight:bold !important;">${player.cognome}</div>
-                <div style="font-size:0.85rem !important; color:#cbd5e0 !important; font-weight:500;">${player.club}</div>
-            </div>
-            <table style="width:100% !important; margin-bottom:12px !important; border-collapse:collapse !important; background:rgba(255,255,255,0.08) !important; border-radius:4px !important; font-size:0.85rem !important;">
-                <tr>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">PTS: <span style="color:#ffc107 !important;">${player.ppg || 0}</span></td>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">AST: <span style="color:#ffc107 !important;">${player.apg || 0}</span></td>
-                </tr>
-                <tr>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">REB: <span style="color:#ffc107 !important;">${player.rpg || 0}</span></td>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">STL: <span style="color:#ffc107 !important;">${player.spg || 0}</span></td>
-                </tr>
-            </table>
-            <button style="background:#ff9800 !important; color:#ffffff !important; border:none !important; padding:10px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important; text-transform:uppercase; font-size:0.85rem !important;" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
-        `;
-        container.appendChild(card);
-    });
+    // Se c'è uno slot libero, lancia il classico sistema di scelta per quel ruolo specifico
+    renderDraftRound();
 }
 
+// ==========================================
+// MODIFICA SULLA SELEZIONE GIOCATORE (PICK)
+// ==========================================
+// Sostituisci la vecchia funzione pickPlayer con questa che gestisce il mercato di riparazione
 function pickPlayer(role, encodedData) {
     const player = JSON.parse(decodeURIComponent(encodedData));
     userTeam[currentDraftStep] = player;
+    
     const slotElement = document.getElementById(`court-slot-${currentDraftStep}`);
     if (slotElement) {
         slotElement.className = "court-player-slot filled";
@@ -3525,103 +3618,12 @@ function pickPlayer(role, encodedData) {
             <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
         `;
     }
+    
     currentDraftStep++;
-    renderDraftRound();
+    // Invece di fare il render sequenziale fisso, controlliamo qual è il prossimo slot vuoto
+    advanceToNextRepairRole();
 }
-
-function renderCalendarAndStandings() {
-    try {
-        const rightSidebar = document.querySelector('.sidebar, [class*="sidebar"], [class*="right"], .col-md-4') || document.body;
-        const potentialCounters = Array.from(rightSidebar.querySelectorAll('div, p, span'))
-            .filter(el => {
-                const text = el.innerText ? el.innerText.trim() : "";
-                return text.match(/^\d+\s*[-–]\s*\d+$/) && 
-                       !text.toUpperCase().includes("CHALLENGE") &&
-                       !el.classList.contains('lnp-text-win') &&
-                       !el.classList.contains('lnp-text-loss');
-            });
-
-        if (potentialCounters.length > 0) {
-            potentialCounters[0].innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
-        }
-    } catch (err) {
-        console.log("Errore contatore:", err);
-    }
-
-    const container = document.getElementById('calendar-render-box') || 
-                      document.querySelector('.calendar-list') || 
-                      document.querySelector('.calendar-item')?.parentNode;
-    
-    if (!container) return;
-
-    let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
-    let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
-
-    let html = "";
-    html += `<div style="background: rgba(255,255,255,0.05) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
-        <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
-    sortedTeams.forEach((team, idx) => {
-        let isMe = team.teamName === "La Tua Squadra";
-        let color = isMe ? "#ff9800" : "#ffffff";
-        html += `<div style="display:flex; justify-content:space-between; padding: 3px 0; color: ${color} !important; font-weight: ${isMe ? 'bold':'normal'} !important;">
-            <span>${idx+1}. ${team.teamName}</span>
-            <span>${team.points} pt (${team.wins}-${team.losses})</span>
-        </div>`;
-    });
-    html += `</div></div>`;
-
-    // Se siamo in modalità Playoff, mostriamo il tabellone delle serie anziché il calendario classico
-    if (playoffBracket) {
-        html += `<div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏀 TABELLONE PLAYOFF LNP (${currentPlayoffRound.toUpperCase()}):</div>`;
-        html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
-        playoffBracket[currentPlayoffRound].forEach((serie, idx) => {
-            let isUserSerie = serie.teamA === "La Tua Squadra" || serie.teamB === "La Tua Squadra";
-            let bgStyle = isUserSerie ? "background: rgba(255,152,0,0.1); border: 1px dashed #ff9800;" : "background: rgba(255,255,255,0.02);";
-            html += `<div style="padding: 6px; margin-bottom:4px; border-radius:4px; ${bgStyle} display: flex; justify-content: space-between; align-items: center;">
-                <div><strong>Serie #${idx+1}:</strong> ${serie.teamA} (pos.${serie.seedA}) vs ${serie.teamB} (pos.${serie.seedB})</div>
-                <div style="font-family: monospace; font-weight: bold; font-size: 0.95rem; color: #ff9800;">${serie.winsA} - ${serie.winsB}</div>
-            </div>`;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-        return;
-    }
-
-    html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
-    html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
-    
-    fullLeagueSchedule.forEach(giornata => {
-        const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
-        if(!myMatch) return;
-
-        const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
-        let resText = 'Da giocare';
-        let cssClass = "lnp-text-pending"; 
-
-        if (myMatch.score) {
-            let scores = myMatch.score.split(" - ");
-            let userScore = parseInt(scores[0]); 
-            let oppScore = parseInt(scores[1]);  
-            
-            cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
-
-            if (myMatch.home === "La Tua Squadra") {
-                resText = `${userScore} - ${oppScore}`;
-            } else {
-                resText = `${oppScore} - ${userScore}`;
-            }
-        }
-
-        html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
-            <div><strong>Gara ${giornata.round}:</strong> ${myMatch.home === "La Tua Squadra" ? "VS" : "@"} ${vsTeam}</div>
-            <div class="${cssClass}" style="font-family: monospace; font-size: 0.9rem;">${resText}</div>
-        </div>`;
-    });
-    html += `</div>`;
-
-    container.innerHTML = html;
-}
+window.pickPlayer = pickPlayer;
 
 // ==========================================
 // 5. MOTORE DI SIMULAZIONE CPU
