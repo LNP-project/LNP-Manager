@@ -3507,32 +3507,37 @@ function pickPlayer(role, encodedData) {
 
 // 4. FIX CHIRURGICO: DISTINZIONE TRA TITOLO E COUNTER PANNELLO
 // ==========================================
+// ==========================================
+// TENTATIVO COERCITIVO TRAMITE COLONNA LATERALE
+// ==========================================
 function renderCalendarAndStandings() {
-    // 1. AGGIORNAMENTO CONTATORE DEL PANNELLO SQUADRA (DESTRA)
+    // 1. AGGIORNAMENTO CONTATORE DESTRA (BLINDAGGIO ANTI-TITOLO)
     try {
-        // Troviamo il blocco intestazione del pannello squadra
-        const allElements = Array.from(document.querySelectorAll('div, h2, h3, h4, .panel-title, .widget-title'));
-        const pannelloSquadraEl = allElements.find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
-
-        if (pannelloSquadraEl && pannelloSquadraEl.parentNode) {
-            // Cerchiamo il testo del punteggio SOLO all'interno dei discendenti del Pannello Squadra
-            const counterTarget = Array.from(pannelloSquadraEl.parentNode.querySelectorAll('div, p, span'))
-                .find(el => {
-                    // Deve contenere il pattern numerico e NON deve far parte del titolo LNP Challenge principale
-                    return el.innerText && 
-                           el.innerText.trim().match(/^\d+\s*[-–]\s*\d+$/) && 
-                           !el.innerText.toUpperCase().includes("CHALLENGE");
-                });
+        // Troviamo il blocco "PANNELLO SQUADRA"
+        const headers = Array.from(document.querySelectorAll('div, h2, h3, h4, th, .panel-title, .widget-title'));
+        const panelHeader = headers.find(el => el.innerText && el.innerText.toUpperCase().includes("PANNELLO SQUADRA"));
+        
+        if (panelHeader && panelHeader.parentNode) {
+            // Prendiamo tutti i div/span sotto il Pannello Squadra
+            const figli = Array.from(panelHeader.parentNode.querySelectorAll('div, p, span'));
             
-            if (counterTarget) {
-                counterTarget.innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
+            // Filtriamo solo quelli che contengono un trattino e NON hanno la parola "CHALLENGE" o "STAGIONE" o "DISPOSIZIONE"
+            const realCounter = figli.find(el => {
+                const txt = el.innerText ? el.innerText.trim() : "";
+                return txt.match(/^\d+\s*[-–]\s*\d+$/) && 
+                       !el.closest('[class*="challenge"]') && 
+                       !txt.toUpperCase().includes("CHALLENGE");
+            });
+
+            if (realCounter) {
+                realCounter.innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
             }
         }
     } catch (err) {
-        console.log("Errore aggiornamento counter pannello:", err);
+        console.error("Errore counter:", err);
     }
 
-    // 2. GENERAZIONE DEL CONTENITORE CALENDARIO/CLASSIFICA
+    // 2. GENERAZIONE CALENDARIO E CLASSIFICA (Il pezzo che andava già bene)
     const container = document.getElementById('calendar-render-box') || 
                       document.querySelector('.calendar-list') || 
                       document.querySelector('.calendar-item')?.parentNode;
@@ -3543,12 +3548,9 @@ function renderCalendarAndStandings() {
     let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
 
     let html = "";
-
-    // CLASSIFICA LIVE
     html += `<div style="background: rgba(255,255,255,0.05) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
         <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
         <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
-    
     sortedTeams.forEach((team, idx) => {
         let isMe = team.teamName === "La Tua Squadra";
         let color = isMe ? "#ff9800" : "#ffffff";
@@ -3559,7 +3561,6 @@ function renderCalendarAndStandings() {
     });
     html += `</div></div>`;
 
-    // RISULTATI E DIARIO DI BORDO
     html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
     html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
     
@@ -3696,6 +3697,27 @@ function simMatch() {
     let mvpStl = Math.round((topScorer.spg || 1) * (0.5 + Math.random() * 1.2));
     let mvpFullStats = `${mvpPts} PTS | ${mvpReb} REB | ${mvpAst} AST | ${mvpStl} STL`;
 
+    // ==========================================================
+    // ENGINE DELLE STATISTICHE DI SQUADRA INTEGRATO
+    // ==========================================================
+    function generateTeamStats(score) {
+        let t3 = Math.floor(Math.random() * 6) + 4; 
+        let tl = Math.floor(Math.random() * 8) + 8; 
+        let rest = score - (t3 * 3) - tl;
+        let t2 = Math.max(0, Math.round(rest / 2));
+        if ((t3 * 3 + t2 * 2 + tl) !== score) tl += (score - (t3 * 3 + t2 * 2 + tl));
+        let t2_att = t2 + Math.floor(Math.random() * 12) + 8;
+        let t3_att = t3 + Math.floor(Math.random() * 14) + 10;
+        return {
+            t2: `${t2}/${t2_att} (${Math.round((t2/t2_att)*100)}%)`,
+            t3: `${t3}/${t3_att} (${Math.round((t3/t3_att)*100)}%)`,
+            tl: `${tl}/${tl + Math.floor(Math.random()*6)}`,
+            reb: Math.floor(Math.random() * 15) + 25,
+            ast: Math.min(t2 + t3 - 2, Math.floor(Math.random() * 10) + 12),
+            palle_perse: Math.floor(Math.random() * 6) + 9
+        };
+    }
+
     let currentStep = 0;
     const totalSteps = 10;
     const interval = setInterval(() => {
@@ -3712,7 +3734,6 @@ function simMatch() {
             myMatch.score = `${finalUserScore} - ${finalOppScore}`;
             myMatch.simulated = true;
 
-            // Determina matematicamente se hai vinto o perso per i colori del banner
             let isUserWin = finalUserScore > finalOppScore;
             let resultColor = isUserWin ? "#28a745" : "#dc3545";
             let resultLabel = isUserWin ? "VITTORIA" : "SCONFITTA";
@@ -3729,13 +3750,42 @@ function simMatch() {
 
             simulateCPUMatches(currentMatchNumber);
 
-            // Forza subito l'aggiornamento grafico del calendario e dei contatori
+            // Calcolo effettivo dei tabellini di fine gara
+            const userStats = generateTeamStats(finalUserScore);
+            const oppStats = generateTeamStats(finalOppScore);
+
+            // Blocco HTML contenente i due tabellini affiancati
+            let statsBlockHtml = `
+                <div style="display: flex; gap: 12px; margin: 10px 0; text-align: left; font-size: 0.75rem; font-family: monospace;">
+                    <div style="flex: 1; background: rgba(40, 167, 69, 0.12); border: 1px solid rgba(40, 167, 69, 0.25); padding: 8px; border-radius: 6px;">
+                        <div style="color: #28a745; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🏀 LA TUA SQUADRA</div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${userStats.t2}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${userStats.t3}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${userStats.tl}</strong></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:3px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:3px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${userStats.reb}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${userStats.ast}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Palle Perse:</span><strong style="color:#dc3545;">${userStats.palle_perse}</strong></div>
+                    </div>
+                    <div style="flex: 1; background: rgba(220, 53, 69, 0.12); border: 1px solid rgba(220, 53, 69, 0.25); padding: 8px; border-radius: 6px;">
+                        <div style="color: #dc3545; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🤖 ${opponentName.substring(0,18)}</div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${oppStats.t2}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${oppStats.t3}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${oppStats.tl}</strong></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:3px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:3px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${oppStats.reb}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${oppStats.ast}</strong></div>
+                        <div style="display:flex; justify-content:space-between;"><span>Palle Perse:</span><strong style="color:#dc3545;">${oppStats.palle_perse}</strong></div>
+                    </div>
+                </div>
+            `;
+
+            // Aggiorna subito il tabellone a destra e forza il calcolo del counter blindato
             renderCalendarAndStandings();
 
             if (currentMatchNumber === 19) {
                 if(banner) {
                     banner.innerHTML = `
                         <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                        ${statsBlockHtml}
                         <div style="font-size:0.8rem; color:#ff9800; margin:4px 0;">⭐ MVP: ${topScorer.cognome} (${mvpFullStats})</div>
                         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
                         <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
@@ -3749,6 +3799,7 @@ function simMatch() {
                 if(banner) {
                     banner.innerHTML = `
                         <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                        ${statsBlockHtml}
                         <div style="font-size:1.15rem; color:#ff9800; font-weight:bold; margin-top:5px;">REGULAR SEASON TERMINATA!</div>
                         <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">ACCEDI AI PLAYOFF LNP ➔</button>
                     `;
@@ -3760,6 +3811,7 @@ function simMatch() {
             if(banner) {
                 banner.innerHTML = `
                     <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                    ${statsBlockHtml}
                     <div style="font-size:0.8rem; color:#ff9800; margin:4px 0;">⭐ MVP: ${topScorer.cognome} (${mvpFullStats})</div>
                     <button onclick="closeBoxscore()" style="background: #1a365d; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">AVANZA AL PROSSIMO TURNO ➔</button>
                 `;
