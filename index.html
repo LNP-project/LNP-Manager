@@ -4113,7 +4113,7 @@ function simMatch() {
 
             renderCalendarAndStandings();
 
-            if (currentMatchNumber === 19) {
+          if (currentMatchNumber === 19) {
                 if(banner) {
                     banner.innerHTML = `
                         <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
@@ -4124,7 +4124,7 @@ function simMatch() {
                     `;
                 }
                 currentMatchNumber++;
-                return;
+                return; // Si ferma qui per il mercato
             }
 
             if (currentMatchNumber === 38) {
@@ -4137,9 +4137,10 @@ function simMatch() {
                     `;
                 }
                 currentMatchNumber++;
-                return;
+                return; // Si ferma qui per i playoff
             }
 
+            // Turni normali di Regular Season
             if(banner) {
                 banner.innerHTML = `
                     <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
@@ -4150,15 +4151,14 @@ function simMatch() {
             }
             currentMatchNumber++;
         }
-    }, 120);
-}
-
+    }, 90); // Fine intervallo ticker live
+} // <--- FINE DELLA FUNZIONE simMatch()
 
 function closeBoxscore() {
     document.getElementById('main-game-viewport').classList.remove('game-mode');
     const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
     if(pBtn) pBtn.disabled = false;
-    updateMatchBanner();
+    if(typeof updateMatchBanner === "function") updateMatchBanner();
 }
 
 </script>
