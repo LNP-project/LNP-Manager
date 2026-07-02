@@ -43,7 +43,6 @@
             transition: grid-template-columns 0.5s ease-in-out;
         }
 
-        /* TRANSIZIONE MODALITÀ GIOCO: Il campo si restringe */
         .game-container.game-mode {
             grid-template-columns: 400px 1fr;
         }
@@ -290,7 +289,6 @@
             }
         }
 
-        /* CARD AGGIORNATE: Bloccate contro i filtri scuri */
         .draft-option-card {
             background: #0f2439 !important;
             border: 2px solid #1e3d59 !important;
@@ -330,14 +328,14 @@
             margin-bottom: 10px;
         }
 
-       .record-text span.w { 
-    color: #10b981 !important; 
-    text-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
-}
-.record-text span.l { 
-    color: #ef4444 !important; 
-    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
-}
+        .record-text span.w { 
+            color: #10b981 !important; 
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.3) !important;
+        }
+        .record-text span.l { 
+            color: #ef4444 !important; 
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
+        }
 
         button {
             background: var(--lnp-orange) !important;
@@ -481,17 +479,9 @@
             border-left: 4px solid var(--lnp-orange);
         }
 
-        /* Classi forzate per i testi del calendario */
-        .lnp-text-win { color: #28a745 !important; font-weight: bold !important; }
-        .lnp-text-loss { color: #dc3545 !important; font-weight: bold !important; }
+        .lnp-text-win { color: #10b981 !important; font-weight: bold !important; }
+        .lnp-text-loss { color: #ef4444 !important; font-weight: bold !important; }
         .lnp-text-pending { color: #aaaaaa !important; }
-
-        .win, .match-win, .lnp-text-win { 
-    color: #10b981 !important; 
-}
-.loss, .match-loss, .lnp-text-loss { 
-    color: #ef4444 !important; 
-}
     </style>
 </head>
 <body>
@@ -531,37 +521,6 @@
             <div class="action-box">
                 <div class="calendar-title">Pannello Squadra</div>
                 <div class="record-text"><span class="w" id="w-counter">0</span> - <span class="l" id="l-counter">0</span></div>
-                <div id="tactic-selection-wrapper" style="margin-bottom: 15px; text-align: center;">
-                    <label for="tactic-select" style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: bold;">
-                        SCEGLI LA DISPOSIZIONE IN CAMPO:
-                    </label>
-                    <select id="tactic-select" onchange="updateCourtPreview()" style="background: var(--bg-card); color: #fff; border: 1px solid var(--lnp-orange); padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; width: 85%; max-width: 280px;">
-                        <option value="3-2">Equilibrato </option>
-                        <option value="4-1">Small ball </option>
-                        <option value="run-gun">Run & Gun </option>
-                        <option value="defense">Difesa del perimetro </option>
-                    </select>
-                </div>
-                <button id="btn-start-draft" onclick="startDraftProcess()" style="margin-bottom:8px;">Avvia Draft</button>
-                <button id="btn-play-game" onclick="simMatch()" disabled>Gioca Partita</button>
-            </div>
-
-            <div class="calendar-box">
-                <div class="calendar-title">Calendario Stagione</div>
-                <div class="calendar-list" id="calendar-render-box" style="color:#ffffff !important;">
-                    <div style="color:var(--text-muted); font-size:0.75rem; padding:10px;">In attesa del draft...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="end-overlay" id="end-screen">
-        <div class="loader-card">
-            <h2 id="end-title" style="font-size:1.8rem; margin-top:0;">RISULTATO</h2>
-            <p id="end-msg" style="margin-bottom:15px; font-size:1rem; line-height:1.4;"></p>
-            <button onclick="location.reload()">Riavvia Nuova Sfida</button>
-        </div>
-    </div>
 
 
     <script>// --- INSERISCI IL TUO DATABASE SU VSCODE ALL'INTERNO DI QUESTO ARRAY ---
@@ -3263,904 +3222,678 @@
 // 1. INIEZIONE FORZATA CSS (ANTI-SBIADIMENTO & FIX COLORI)
 // ==========================================
 (function injectPerfectCSS() {
-    const styleId = "lnp-challenge-overrides";
-    if (document.getElementById(styleId)) return;
-    
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.innerHTML = `
-        /* Forza le card del Draft a vedersi perfettamente ad alto contrasto */
-        .draft-option-card, [class*="draft-option"] {
-            background: #0f2439 !important;
-            opacity: 1 !important;
-            filter: none !important;
-            visibility: visible !important;
-            border: 2px solid #1e3d59 !important;
-            color: #ffffff !important;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.6) !important;
-        }
-        /* Forza i testi interni alle card a non sbiadire */
-        .draft-option-card *, [class*="draft-option"] * {
-            color: #ffffff !important;
-            opacity: 1 !important;
-            filter: none !important;
-        }
-        /* Assicura che i bottoni risaltino */
-        .draft-option-card button {
-            background: #ff9800 !important;
-            color: #ffffff !important;
-            font-weight: bold !important;
-            opacity: 1 !important;
-        }
-        
-        /* FORZATURA ASSOLUTA COLORI DIARIO DI BORDO E CONTATORI */
-        .lnp-text-win { 
-            color: #28a745 !important; 
-            font-weight: bold !important;
-            display: inline-block !important;
-        }
-        .lnp-text-loss { 
-            color: #dc3545 !important; 
-            font-weight: bold !important;
-            display: inline-block !important;
-        }
-        .lnp-text-pending { 
-            color: #aaaaaa !important; 
-        }
-        /* Forza il contatore del pannello ad essere visibile e della dimensione giusta */
-        #lnp-counter-vittorie { color: #28a745 !important; font-weight: bold !important; }
-        #lnp-counter-sconfitte { color: #dc3545 !important; font-weight: bold !important; }
-    `;
-    document.head.appendChild(style);
-})();
-
-// ==========================================
-// 2. VARIABILI DI STATO GLOBALI
-// ==========================================
-const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
-const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
-
-let orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
-let currentDraftStep = 0;
-let userTeam = {};
-let currentMatchNumber = 1;
-let fullLeagueSchedule = []; 
-
-let userWins = 0;
-let userLosses = 0;
-
-let standings = {}; 
-let playerStatsStore = {}; 
-let playersToCut = []; 
-
-// Nuove variabili per la gestione strutturata dei Playoff
-let playoffBracket = null;
-let currentPlayoffRound = "Quarti"; // Quarti -> Semifinali -> Finale
-let currentPlayoffSeriesIndex = 0;
-let currentPlayoffGameNumber = 1;
-
-// ==========================================
-// FUNZIONI DI SUPPORTO RANDOMIZZAZIONE
-// ==========================================
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-// ==========================================
-// 3. INIZIALIZZAZIONE DATI & CALENDARIO
-// ==========================================
-function initChampionshipData() {
-    standings = {};
-    totalTeams.forEach(team => {
-        standings[team] = { teamName: team, wins: 0, losses: 0, points: 0 };
-    });
-
-    playerStatsStore = {};
-    allPlayers.forEach(p => {
-        if (p && p.cognome) {
-            const key = `${p.cognome}_${p.club}`;
-            playerStatsStore[key] = {
-                cognome: p.cognome,
-                club: p.club,
-                gamesPlayed: 0,
-                totalPoints: 0,
-                avgPoints: 0
-            };
-        }
-    });
-    
-    // Reset dello stato playoff ad ogni nuova stagione
-    playoffBracket = null;
-    currentPlayoffRound = "Quarti";
-    currentPlayoffSeriesIndex = 0;
-    currentPlayoffGameNumber = 1;
-}
-
-function generatePerfectSchedule() {
-    initChampionshipData();
-    fullLeagueSchedule = [];
-    
-    // Per avere un calendario sempre diverso ma con Andata/Ritorno perfette,
-    // mischiamo l'array delle squadre avversarie tenendo fissa "La Tua Squadra" in posizione 0
-    let list = ["La Tua Squadra", ...shuffleArray([...opponentTeams])];
-    const numTeams = list.length;
-    const rounds = numTeams - 1; 
-
-    // Generazione Girone di Andata (Gara 1-19)
-    for (let r = 0; r < rounds; r++) {
-        let roundMatches = [];
-        for (let i = 0; i < numTeams / 2; i++) {
-            let home = list[i];
-            let away = list[numTeams - 1 - i];
+            const styleId = "lnp-challenge-overrides";
+            if (document.getElementById(styleId)) return;
             
-            // Alternanza perfetta casa/fuori ad ogni giornata
-            if (r % 2 === 1) {
-                roundMatches.push({ home: away, away: home, score: "", simulated: false });
-            } else {
-                roundMatches.push({ home: home, away: away, score: "", simulated: false });
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.innerHTML = `
+                .draft-option-card, [class*="draft-option"] {
+                    background: #0f2439 !important;
+                    opacity: 1 !important;
+                    filter: none !important;
+                    visibility: visible !important;
+                    border: 2px solid #1e3d59 !important;
+                    color: #ffffff !important;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.6) !important;
+                }
+                .draft-option-card *, [class*="draft-option"] * {
+                    color: #ffffff !important;
+                    opacity: 1 !important;
+                    filter: none !important;
+                }
+                .draft-option-card button {
+                    background: #ff9800 !important;
+                    color: #ffffff !important;
+                    font-weight: bold !important;
+                    opacity: 1 !important;
+                }
+                .lnp-text-win { color: #10b981 !important; font-weight: bold !important; display: inline-block !important; }
+                .lnp-text-loss { color: #ef4444 !important; font-weight: bold !important; display: inline-block !important; }
+                .lnp-text-pending { color: #aaaaaa !important; }
+                #lnp-counter-vittorie { color: #28a745 !important; font-weight: bold !important; }
+                #lnp-counter-sconfitte { color: #dc3545 !important; font-weight: bold !important; }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        // --- VARIABILI DI STATO ---
+        const opponentTeams = [...new Set(allPlayers.map(p => p.club))].filter(Boolean); 
+        const totalTeams = ["La Tua Squadra", ...opponentTeams]; 
+
+        let orderRoles = ['PG', 'SG', 'SF', 'PF', 'C'];
+        let currentDraftStep = 0;
+        let userTeam = {};
+        let currentMatchNumber = 1;
+        let fullLeagueSchedule = []; 
+
+        let userWins = 0;
+        let userLosses = 0;
+
+        let standings = {}; 
+        let playerStatsStore = {}; 
+
+        let playoffBracket = null;
+        let currentPlayoffRound = "Quarti"; 
+        let currentPlayoffGameNumber = 1;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
+            return array;
         }
-        fullLeagueSchedule.push({ round: r + 1, matches: roundMatches });
-        // Algoritmo di rotazione Berger per girare i turni senza ripetizioni
-        list.splice(1, 0, list.pop());
-    }
 
-    // Generazione Girone di Ritorno speculare a campi invertiti (Gara 20-38)
-    for (let r = 0; r < rounds; r++) {
-        let roundMatches = fullLeagueSchedule[r].matches.map(m => {
-            return { home: m.away, away: m.home, score: "", simulated: false };
-        });
-        fullLeagueSchedule.push({ round: r + 20, matches: roundMatches });
-    }
-
-    renderCalendarAndStandings();
-}
-
-// ==========================================
-// 4. INTERFACCIA DRAFT INIZIALE AGGIORNATA
-// ==========================================
-function updateCourtPreview() {
-    const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
-    if (!selectElem) return;
-    const tactic = selectElem.value;
-    let previewRoles = (tactic === '4-1') ? ['PG', 'SG', 'SG', 'SF', 'C'] :
-                       (tactic === 'run-gun') ? ['PG', 'SG', 'SF', 'SF', 'PF'] :
-                       (tactic === 'defense') ? ['PG', 'SF', 'PF', 'C', 'C'] : ['PG', 'SG', 'SF', 'PF', 'C'];
-
-    const courtContainer = document.getElementById('court-grid'); 
-    if (courtContainer) {
-        courtContainer.innerHTML = "";
-        previewRoles.forEach((role, index) => {
-            courtContainer.innerHTML += `
-                <div id="court-slot-${index}" class="court-player-slot">
-                    <span class="role-indicator">${role}</span>
-                    <div class="p-name">?</div><div class="p-club">-</div>
-                </div>`;
-        });
-    }
-}
-window.updateCourtPreview = updateCourtPreview;
-
-function startDraftProcess() {
-    const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
-    if(selectElem) {
-        selectElem.disabled = true;
-        const tactic = selectElem.value;
-        orderRoles = (tactic === '4-1') ? ['PG', 'SG', 'SG', 'SF', 'C'] :
-                     (tactic === 'run-gun') ? ['PG', 'SG', 'SF', 'SF', 'PF'] :
-                     (tactic === 'defense') ? ['PG', 'SF', 'PF', 'C', 'C'] : ['PG', 'SG', 'SF', 'PF', 'C'];
-    }
-    const sBtn = document.getElementById('btn-start-draft') || document.querySelector('button[onclick*="startDraft"]');
-    if(sBtn) sBtn.disabled = true;
-    
-    currentDraftStep = 0;
-    userTeam = {};
-    updateCourtPreview();
-    renderDraftRound();
-}
-window.startDraftProcess = startDraftProcess;
-
-function renderDraftRound() {
-    if(currentDraftStep >= orderRoles.length) {
-        document.getElementById('draft-title-text').innerHTML = `<span style="color:#ffffff !important;">Draft Completato!</span>`;
-        document.getElementById('draft-options-container').innerHTML = '<div style="color:#28a745 !important; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Roster pronto! Clicca su "GIOCA PARTITA".</div>';
-        generatePerfectSchedule(); 
-        
-        const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
-        if(pBtn) pBtn.disabled = false;
-        
-        return;
-    }
-    const activeRole = orderRoles[currentDraftStep];
-    document.getElementById('draft-title-text').innerHTML = `<span style="color:#ffffff !important;">Fase ${currentDraftStep + 1}: Scegli il tuo </span><span style="color:#ff9800 !important; font-weight:bold;">${activeRole}</span>`;
-
-    let pool = (activeRole === 'SG') ? allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG') : allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
-    const currentSelectedCognomi = Object.values(userTeam).map(p => p ? p.cognome : "");
-    pool = pool.filter(p => p && p.cognome && !currentSelectedCognomi.includes(p.cognome));
-
-    let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
-    const container = document.getElementById('draft-options-container');
-    container.innerHTML = '';
-
-    choices.forEach(player => {
-        const card = document.createElement('div');
-        card.className = 'draft-option-card';
-        const safeString = encodeURIComponent(JSON.stringify(player));
-        
-        card.innerHTML = `
-            <div style="margin-bottom:8px;">
-                <div style="color:#ff9800 !important; font-size:1.2rem !important; font-weight:bold !important;">${player.cognome}</div>
-                <div style="font-size:0.85rem !important; color:#cbd5e0 !important; font-weight:500;">${player.club}</div>
-            </div>
-            <table style="width:100% !important; margin-bottom:12px !important; border-collapse:collapse !important; background:rgba(255,255,255,0.08) !important; border-radius:4px !important; font-size:0.85rem !important;">
-                <tr>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">PTS: <span style="color:#ffc107 !important;">${player.ppg || 0}</span></td>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">AST: <span style="color:#ffc107 !important;">${player.apg || 0}</span></td>
-                </tr>
-                <tr>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">REB: <span style="color:#ffc107 !important;">${player.rpg || 0}</span></td>
-                    <td style="padding:6px; text-align:center; border:1px solid rgba(255,255,255,0.15); font-weight:bold;">STL: <span style="color:#ffc107 !important;">${player.spg || 0}</span></td>
-                </tr>
-            </table>
-            <button style="background:#ff9800 !important; color:#ffffff !important; border:none !important; padding:10px !important; border-radius:4px !important; cursor:pointer !important; width:100% !important; font-weight:bold !important; text-transform:uppercase; font-size:0.85rem !important;" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
-        `;
-        container.appendChild(card);
-    });
-}
-
-function pickPlayer(role, encodedData) {
-    const player = JSON.parse(decodeURIComponent(encodedData));
-    userTeam[currentDraftStep] = player;
-    const slotElement = document.getElementById(`court-slot-${currentDraftStep}`);
-    if (slotElement) {
-        slotElement.className = "court-player-slot filled";
-        slotElement.innerHTML = `
-            <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span>
-            <div class="p-name" style="color:white; font-weight:bold;">${player.cognome}</div>
-            <div class="p-club">${player.club}</div>
-            <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
-        `;
-    }
-    currentDraftStep++;
-    renderDraftRound();
-}
-
-function renderCalendarAndStandings() {
-    try {
-        const rightSidebar = document.querySelector('.sidebar, [class*="sidebar"], [class*="right"], .col-md-4') || document.body;
-        const potentialCounters = Array.from(rightSidebar.querySelectorAll('div, p, span'))
-            .filter(el => {
-                const text = el.innerText ? el.innerText.trim() : "";
-                return text.match(/^\d+\s*[-–]\s*\d+$/) && 
-                       !text.toUpperCase().includes("CHALLENGE") &&
-                       !el.classList.contains('lnp-text-win') &&
-                       !el.classList.contains('lnp-text-loss');
+        function initChampionshipData() {
+            standings = {};
+            totalTeams.forEach(team => {
+                standings[team] = { teamName: team, wins: 0, losses: 0, points: 0 };
             });
 
-        if (potentialCounters.length > 0) {
-            potentialCounters[0].innerHTML = `<span style="color:#28a745 !important; font-weight:bold !important;">${userWins}</span> - <span style="color:#dc3545 !important; font-weight:bold !important;">${userLosses}</span>`;
-        }
-    } catch (err) {
-        console.log("Errore contatore:", err);
-    }
-
-    const container = document.getElementById('calendar-render-box') || 
-                      document.querySelector('.calendar-list') || 
-                      document.querySelector('.calendar-item')?.parentNode;
-    
-    if (!container) return;
-
-    let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
-    let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
-
-    let html = "";
-    html += `<div style="background: rgba(255,255,255,0.05) !important; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Posizione: #${myPos})</div>
-        <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
-    sortedTeams.forEach((team, idx) => {
-        let isMe = team.teamName === "La Tua Squadra";
-        let color = isMe ? "#ff9800" : "#ffffff";
-        html += `<div style="display:flex; justify-content:space-between; padding: 3px 0; color: ${color} !important; font-weight: ${isMe ? 'bold':'normal'} !important;">
-            <span>${idx+1}. ${team.teamName}</span>
-            <span>${team.points} pt (${team.wins}-${team.losses})</span>
-        </div>`;
-    });
-    html += `</div></div>`;
-
-    // Se siamo in modalità Playoff, mostriamo il tabellone delle serie anziché il calendario classico
-    if (playoffBracket) {
-        html += `<div style="font-weight: bold !important; color: #ff9800 !important; font-size: 0.85rem; margin-bottom: 6px;">🏀 TABELLONE PLAYOFF LNP (${currentPlayoffRound.toUpperCase()}):</div>`;
-        html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
-        playoffBracket[currentPlayoffRound].forEach((serie, idx) => {
-            let isUserSerie = serie.teamA === "La Tua Squadra" || serie.teamB === "La Tua Squadra";
-            let bgStyle = isUserSerie ? "background: rgba(255,152,0,0.1); border: 1px dashed #ff9800;" : "background: rgba(255,255,255,0.02);";
-            html += `<div style="padding: 6px; margin-bottom:4px; border-radius:4px; ${bgStyle} display: flex; justify-content: space-between; align-items: center;">
-                <div><strong>Serie #${idx+1}:</strong> ${serie.teamA} (pos.${serie.seedA}) vs ${serie.teamB} (pos.${serie.seedB})</div>
-                <div style="font-family: monospace; font-weight: bold; font-size: 0.95rem; color: #ff9800;">${serie.winsA} - ${serie.winsB}</div>
-            </div>`;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
-        return;
-    }
-
-    html += `<div style="font-weight: bold !important; color: #ffffff !important; font-size: 0.85rem; margin-bottom: 6px;">📅 RISULTATI E DIARIO DI BORDO:</div>`;
-    html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
-    
-    fullLeagueSchedule.forEach(giornata => {
-        const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
-        if(!myMatch) return;
-
-        const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
-        let resText = 'Da giocare';
-        let cssClass = "lnp-text-pending"; 
-
-        if (myMatch.score) {
-            let scores = myMatch.score.split(" - ");
-            let userScore = parseInt(scores[0]); 
-            let oppScore = parseInt(scores[1]);  
+            playerStatsStore = {};
+            allPlayers.forEach(p => {
+                if (p && p.cognome) {
+                    const key = `${p.cognome}_${p.club}`;
+                    playerStatsStore[key] = {
+                        cognome: p.cognome,
+                        club: p.club,
+                        gamesPlayed: 0,
+                        totalPoints: 0,
+                        avgPoints: 0
+                    };
+                }
+            });
             
-            cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
+            playoffBracket = null;
+            currentPlayoffRound = "Quarti";
+            currentPlayoffGameNumber = 1;
+        }
 
-            if (myMatch.home === "La Tua Squadra") {
-                resText = `${userScore} - ${oppScore}`;
-            } else {
-                resText = `${oppScore} - ${userScore}`;
+        function generatePerfectSchedule() {
+            initChampionshipData();
+            fullLeagueSchedule = [];
+            
+            let list = ["La Tua Squadra", ...shuffleArray([...opponentTeams])];
+            const numTeams = list.length;
+            const rounds = numTeams - 1; 
+
+            for (let r = 0; r < rounds; r++) {
+                let roundMatches = [];
+                for (let i = 0; i < numTeams / 2; i++) {
+                    let home = list[i];
+                    let away = list[numTeams - 1 - i];
+                    
+                    if (r % 2 === 1) {
+                        roundMatches.push({ home: away, away: home, score: "", simulated: false });
+                    } else {
+                        roundMatches.push({ home: home, away: away, score: "", simulated: false });
+                    }
+                }
+                fullLeagueSchedule.push({ round: r + 1, matches: roundMatches });
+                list.splice(1, 0, list.pop());
+            }
+
+            for (let r = 0; r < rounds; r++) {
+                let roundMatches = fullLeagueSchedule[r].matches.map(m => {
+                    return { home: m.away, away: m.home, score: "", simulated: false };
+                });
+                fullLeagueSchedule.push({ round: r + rounds + 1, matches: roundMatches });
+            }
+
+            renderCalendarAndStandings();
+        }
+
+        function updateCourtPreview() {
+            const selectElem = document.getElementById('tactic-select');
+            if (!selectElem) return;
+            const tactic = selectElem.value;
+            let previewRoles = (tactic === '4-1') ? ['PG', 'SG', 'SG', 'SF', 'C'] :
+                               (tactic === 'run-gun') ? ['PG', 'SG', 'SF', 'SF', 'PF'] :
+                               (tactic === 'defense') ? ['PG', 'SF', 'PF', 'C', 'C'] : ['PG', 'SG', 'SF', 'PF', 'C'];
+
+            const courtContainer = document.getElementById('court-grid'); 
+            if (courtContainer) {
+                courtContainer.innerHTML = "";
+                previewRoles.forEach((role, index) => {
+                    courtContainer.innerHTML += `
+                        <div id="court-slot-${index}" class="court-player-slot">
+                            <span class="role-indicator">${role}</span>
+                            <div class="p-name">?</div><div class="p-club">-</div>
+                        </div>`;
+                });
             }
         }
+        window.updateCourtPreview = updateCourtPreview;
 
-        html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; color: #fff !important;">
-            <div><strong>Gara ${giornata.round}:</strong> ${myMatch.home === "La Tua Squadra" ? "VS" : "@"} ${vsTeam}</div>
-            <div class="${cssClass}" style="font-family: monospace; font-size: 0.9rem;">${resText}</div>
-        </div>`;
-    });
-    html += `</div>`;
-
-    container.innerHTML = html;
-}
-
-// ==========================================
-// 5. MOTORE DI SIMULAZIONE CPU
-// ==========================================
-function simulateCPUMatches(currentRound) {
-    const roundData = fullLeagueSchedule[currentRound - 1];
-    if (!roundData) return;
-    
-    roundData.matches.forEach(match => {
-        if (match.home === "La Tua Squadra" || match.away === "La Tua Squadra") return; 
-
-        let homePlayers = allPlayers.filter(p => p.club === match.home);
-        let homeOvr = homePlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (homePlayers.length || 1);
-        
-        let awayPlayers = allPlayers.filter(p => p.club === match.away);
-        let awayOvr = awayPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (awayPlayers.length || 1);
-
-        let homeEff = 0.70 + ((homeOvr + 3) * 0.0035) + ((Math.random() * 14 - 7) / 100);
-        let awayEff = 0.70 + (awayOvr * 0.0035) + ((Math.random() * 14 - 7) / 100);
-
-        let pace = Math.round(72 + Math.random() * 12);
-        let scoreHome = Math.round(pace * homeEff);
-        let scoreAway = Math.round(pace * awayEff);
-
-        if (scoreHome === scoreAway) scoreHome += Math.random() > 0.5 ? 2 : -2;
-
-        match.score = `${scoreHome} - ${scoreAway}`;
-        match.simulated = true;
-
-        if (scoreHome > scoreAway) {
-            standings[match.home].wins++; standings[match.home].points += 2;
-            standings[match.away].losses++;
-        } else {
-            standings[match.away].wins++; standings[match.away].points += 2;
-            standings[match.home].losses++;
+        function startDraftProcess() {
+            const selectElem = document.getElementById('tactic-select');
+            if(selectElem) {
+                selectElem.disabled = true;
+                const tactic = selectElem.value;
+                orderRoles = (tactic === '4-1') ? ['PG', 'SG', 'SG', 'SF', 'C'] :
+                             (tactic === 'run-gun') ? ['PG', 'SG', 'SF', 'SF', 'PF'] :
+                             (tactic === 'defense') ? ['PG', 'SF', 'PF', 'C', 'C'] : ['PG', 'SG', 'SF', 'PF', 'C'];
+            }
+            const sBtn = document.getElementById('btn-start-draft');
+            if(sBtn) sBtn.disabled = true;
+            
+            currentDraftStep = 0;
+            userTeam = {};
+            updateCourtPreview();
+            renderDraftRound();
         }
-    });
-}
+        window.startDraftProcess = startDraftProcess;
 
-// ==========================================
-// 6. MOTORE DI STRUTTURAZIONE PLAYOFF (COMPLETO)
-// ==========================================
-function buildPlayoffBrackets() {
-    if (!playoffBracket) {
-        // Prendiamo le prime 8 classificate della Regular Season
-        let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
-        let qualified = sortedTeams.slice(0, 8);
-        
-        // Se l'utente arriva sotto l'ottavo posto, la corsa finisce
-        let userQualified = qualified.some(t => t.teamName === "La Tua Squadra");
-        if (!userQualified) {
-            alert("Stagione Terminata! Non ti sei qualificato nei primi 8 posti per i Playoff.");
-            return;
+        function renderDraftRound() {
+            if(currentDraftStep >= orderRoles.length) {
+                document.getElementById('draft-title-text').innerHTML = `<span>Draft Completato!</span>`;
+                document.getElementById('draft-options-container').innerHTML = '<div style="color:#10b981 !important; font-weight:bold; padding:15px; text-align:center; grid-column: span 5; font-size:1.1rem;">Roster pronto! Clicca su "GIOCA PARTITA".</div>';
+                generatePerfectSchedule(); 
+                
+                const pBtn = document.getElementById('btn-play-game');
+                if(pBtn) pBtn.disabled = false;
+                return;
+            }
+            const activeRole = orderRoles[currentDraftStep];
+            document.getElementById('draft-title-text').innerHTML = `<span>Fase ${currentDraftStep + 1}: Scegli il tuo </span><span style="color:#ff9800 !important; font-weight:bold;">${activeRole}</span>`;
+
+            let pool = (activeRole === 'SG') ? allPlayers.filter(p => p.ruolo1 === 'SG' || p.ruolo2 === 'SG' || p.ruolo1 === 'PG' || p.ruolo2 === 'PG') : allPlayers.filter(p => p.ruolo1 === activeRole || p.ruolo2 === activeRole);
+            const currentSelectedCognomi = Object.values(userTeam).map(p => p ? p.cognome : "");
+            pool = pool.filter(p => p && p.cognome && !currentSelectedCognomi.includes(p.cognome));
+
+            let choices = [...pool].sort(() => 0.5 - Math.random()).slice(0, 5);
+            const container = document.getElementById('draft-options-container');
+            container.innerHTML = '';
+
+            choices.forEach(player => {
+                const card = document.createElement('div');
+                card.className = 'draft-option-card';
+                const safeString = encodeURIComponent(JSON.stringify(player));
+                
+                card.innerHTML = `
+                    <div style="margin-bottom:8px;">
+                        <div style="color:#ff9800 !important; font-size:1.2rem !important; font-weight:bold !important;">${player.cognome}</div>
+                        <div style="font-size:0.85rem !important; color:#cbd5e0 !important;">${player.club}</div>
+                    </div>
+                    <table style="width:100%; margin-bottom:12px; border-collapse:collapse; background:rgba(255,255,255,0.08); font-size:0.85rem;">
+                        <tr>
+                            <td style="padding:4px; text-align:center; border:1px solid rgba(255,255,255,0.15);">PTS: ${player.ppg || 0}</td>
+                            <td style="padding:4px; text-align:center; border:1px solid rgba(255,255,255,0.15);">AST: ${player.apg || 0}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:4px; text-align:center; border:1px solid rgba(255,255,255,0.15);">REB: ${player.rpg || 0}</td>
+                            <td style="padding:4px; text-align:center; border:1px solid rgba(255,255,255,0.15);">STL: ${player.spg || 0}</td>
+                        </tr>
+                    </table>
+                    <button class="btn-choose" onclick="pickPlayer('${activeRole}', '${safeString}')">Seleziona</button>
+                `;
+                container.appendChild(card);
+            });
         }
 
-        // Strutturazione Quarti di Finale (Accoppiamenti Classici LNP: 1-8, 2-7, 3-6, 4-5)
-        playoffBracket = {
-            "Quarti": [
-                { teamA: qualified[0].teamName, seedA: 1, winsA: 0, teamB: qualified[7].teamName, seedB: 8, winsB: 0 },
-                { teamA: qualified[3].teamName, seedA: 4, winsA: 0, teamB: qualified[4].teamName, seedB: 5, winsB: 0 },
-                { teamA: qualified[1].teamName, seedA: 2, winsA: 0, teamB: qualified[6].teamName, seedB: 7, winsB: 0 },
-                { teamA: qualified[2].teamName, seedA: 3, winsA: 0, teamB: qualified[5].teamName, seedB: 6, winsB: 0 }
-            ],
-            "Semifinali": [],
-            "Finale": []
-        };
-        currentPlayoffRound = "Quarti";
-        currentPlayoffGameNumber = 1;
-    }
-    
-    renderCalendarAndStandings();
-    triggerPlayoffSimulationLoop();
-}
-window.buildPlayoffBrackets = buildPlayoffBrackets;
-
-function triggerPlayoffSimulationLoop() {
-    let roundSeries = playoffBracket[currentPlayoffRound];
-    
-    // Controlliamo se tutte le serie del turno attuale sono finite
-    let allFinished = roundSeries.every(s => s.winsA === 3 || s.winsB === 3);
-    if (allFinished) {
-        advancePlayoffRound();
-        return;
-    }
-
-    // Cerchiamo la serie in cui gioca l'utente per questo turno
-    let userSerie = roundSeries.find(s => s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra");
-    
-    // Se l'utente è già stato eliminato in un turno precedente, blocca la corsa
-    if (!userSerie) {
-        alert("Sei stato eliminato dai Playoff! Game Over.");
-        return;
-    }
-
-    // Se la serie specifica dell'utente è finita (qualcuno ha preso 3 vittorie), ma le altre CPU stanno ancora giocando
-    if (userSerie.winsA === 3 || userSerie.winsB === 3) {
-        // Simula le partite rimanenti delle CPU in background
-        simulateCPUPlayoffGames();
-        renderCalendarAndStandings();
-        setTimeout(triggerPlayoffSimulationLoop, 200);
-        return;
-    }
-
-    // Determina l'avversario attuale dell'utente e chi gioca in casa (Gare 1,2,5 in casa del miglior seed)
-    let isUserTeamA = userSerie.teamA === "La Tua Squadra";
-    let opponentName = isUserTeamA ? userSerie.teamB : userSerie.teamA;
-    let betterSeed = isUserTeamA ? (userSerie.seedA < userSerie.seedB) : (userSerie.seedB < userSerie.seedA);
-    
-    let isUserHome = false;
-    if ([1, 2, 5].includes(currentPlayoffGameNumber)) {
-        isUserHome = betterSeed;
-    } else {
-        isUserHome = !betterSeed;
-    }
-
-    // Aggiorna l'interfaccia principale per caricare la partita di Playoff
-    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
-    if (banner) {
-        banner.innerHTML = `
-            <div style="color:#ff9800; font-weight:bold; font-size:1.1rem; margin-bottom:2px;">🔥 PLAYOFF - ${currentPlayoffRound.toUpperCase()} (GARA ${currentPlayoffGameNumber})</div>
-            <div style="font-size:0.85rem; color:#fff; margin-bottom:6px;">SERIE: ${userSerie.teamA} [${userSerie.winsA}] - [${userSerie.winsB}] ${userSerie.teamB}</div>
-            <div style="font-size:0.8rem; color:#ccc; margin-bottom:8px;">Campo: ${isUserHome ? "PALA-HOME (Casa Tua)" : `PALA-AWAY (@ ${opponentName})`}</div>
-            <button onclick="executePlayoffGameLive()" id="btn-play-game" style="background:#38a169; color:white; border:none; padding:12px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; font-size:1rem;">GIOCA GARA ${currentPlayoffGameNumber} 🏀</button>
-        `;
-    }
-}
-
-function simulateCPUPlayoffGames() {
-    let roundSeries = playoffBracket[currentPlayoffRound];
-    roundSeries.forEach(s => {
-        if (s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra") return; // L'utente gioca live
-        if (s.winsA === 3 || s.winsB === 3) return; // Serie già conclusa
-
-        // Calcolo rapido basato sul blocco OVR
-        let homePlayers = allPlayers.filter(p => p.club === s.teamA);
-        let awayPlayers = allPlayers.filter(p => p.club === s.teamB);
-        let ovrA = homePlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (homePlayers.length || 1);
-        let ovrB = awayPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (awayPlayers.length || 1);
-
-        // Vantaggio campo standard a TeamA
-        if (ovrA + 2 + Math.random() * 10 > ovrB + Math.random() * 10) {
-            s.winsA++;
-        } else {
-            s.winsB++;
+        function pickPlayer(role, encodedData) {
+            const player = JSON.parse(decodeURIComponent(encodedData));
+            userTeam[currentDraftStep] = player;
+            const slotElement = document.getElementById(`court-slot-${currentDraftStep}`);
+            if (slotElement) {
+                slotElement.className = "court-player-slot filled";
+                slotElement.innerHTML = `
+                    <span class="role-indicator" style="background:var(--lnp-blue); color:white;">${role}</span>
+                    <div class="p-name">${player.cognome}</div>
+                    <div class="p-club">${player.club}</div>
+                    <div style="font-size:0.65rem; color:#ffc107; margin-top:2px;">P: ${player.ppg || 0} | A: ${player.apg || 0}</div>
+                `;
+            }
+            currentDraftStep++;
+            renderDraftRound();
         }
-    });
-}
 
-function advancePlayoffRound() {
-    let roundSeries = playoffBracket[currentPlayoffRound];
-    let winners = roundSeries.map(s => {
-        return s.winsA === 3 ? { name: s.teamA, seed: s.seedA } : { name: s.teamB, seed: s.seedB };
-    });
+        function renderCalendarAndStandings() {
+            document.getElementById('w-counter').innerText = userWins;
+            document.getElementById('l-counter').innerText = userLosses;
 
-    if (currentPlayoffRound === "Quarti") {
-        playoffBracket["Semifinali"] = [
-            { teamA: winners[0].name, seedA: winners[0].seed, winsA: 0, teamB: winners[1].name, seedB: winners[1].seed, winsB: 0 },
-            { teamA: winners[2].name, seedA: winners[2].seed, winsA: 0, teamB: winners[3].name, seedB: winners[3].seed, winsB: 0 }
-        ];
-        currentPlayoffRound = "Semifinali";
-        currentPlayoffGameNumber = 1;
-        alert("🏆 COMPLIMENTI! Accedi alle SEMIFINALI Playoff al meglio delle 5 gare!");
-        buildPlayoffBrackets();
-    } else if (currentPlayoffRound === "Semifinali") {
-        playoffBracket["Finale"] = [
-            { teamA: winners[0].name, seedA: winners[0].seed, winsA: 0, teamB: winners[1].name, seedB: winners[1].seed, winsB: 0 }
-        ];
-        currentPlayoffRound = "Finale";
-        currentPlayoffGameNumber = 1;
-        alert("🔥 INCREDIBILE! Sei in FINALE PLAYOFF! Ci si gioca l'Anello del Campionato al meglio delle 5 gare!");
-        buildPlayoffBrackets();
-    } else if (currentPlayoffRound === "Finale") {
-        let finalSerie = playoffBracket["Finale"][0];
-        let champion = finalSerie.winsA === 3 ? finalSerie.teamA : finalSerie.teamB;
-        if (champion === "La Tua Squadra") {
-            alert("👑 CAMPIONI! CAMPIONI! CAMPIONI! Hai vinto i Playoff della LNP e conquistato la promozione! 🏆🍾");
-        } else {
-            alert(`La Finale si chiude qui. Campione LNP: ${champion}. Ritenta la prossima stagione! 🏀`);
+            const container = document.getElementById('calendar-render-box');
+            if (!container) return;
+
+            let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
+            let myPos = sortedTeams.findIndex(t => t.teamName === "La Tua Squadra") + 1;
+
+            let html = `
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-weight: bold; color: #ff9800; font-size: 0.85rem; margin-bottom: 6px;">🏆 CLASSIFICA LIVE (Pos.: #${myPos})</div>
+                    <div style="max-height: 120px; overflow-y: auto; font-size: 0.75rem;">`;
+            sortedTeams.forEach((team, idx) => {
+                let isMe = team.teamName === "La Tua Squadra";
+                html += `<div style="display:flex; justify-content:space-between; padding: 3px 0; color: ${isMe ? '#ff9800':'#ffffff'} !important; font-weight: ${isMe ? 'bold':'normal'};">
+                    <span>${idx+1}. ${team.teamName}</span>
+                    <span>${team.points} pt (${team.wins}-${team.losses})</span>
+                </div>`;
+            });
+            html += `</div></div>`;
+
+            if (playoffBracket) {
+                html += `<div style="font-weight: bold; color: #ff9800; font-size: 0.85rem; margin-bottom: 6px;">🏀 TABELLONE PLAYOFF (${currentPlayoffRound.toUpperCase()}):</div>`;
+                html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
+                playoffBracket[currentPlayoffRound].forEach((serie, idx) => {
+                    let isUserSerie = serie.teamA === "La Tua Squadra" || serie.teamB === "La Tua Squadra";
+                    let bgStyle = isUserSerie ? "background: rgba(255,152,0,0.1); border: 1px dashed #ff9800;" : "background: rgba(255,255,255,0.02);";
+                    html += `<div style="padding: 6px; margin-bottom:4px; border-radius:4px; ${bgStyle} display: flex; justify-content: space-between; align-items: center;">
+                        <div><strong>Serie #${idx+1}:</strong> ${serie.teamA} vs ${serie.teamB}</div>
+                        <div style="font-family: monospace; font-weight: bold; color: #ff9800;">${serie.winsA} - ${serie.winsB}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+                return;
+            }
+
+            html += `<div style="font-weight: bold; color: #ffffff; font-size: 0.85rem; margin-bottom: 6px;">📅 DIARIO DI BORDO:</div>`;
+            html += `<div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem;">`;
+            
+            fullLeagueSchedule.forEach(giornata => {
+                const myMatch = giornata.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
+                if(!myMatch) return;
+
+                const vsTeam = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
+                let resText = 'Da giocare';
+                let cssClass = "lnp-text-pending"; 
+
+                if (myMatch.score) {
+                    let scores = myMatch.score.split(" - ");
+                    let userScore = parseInt(scores[0]); 
+                    let oppScore = parseInt(scores[1]);  
+                    cssClass = (userScore > oppScore) ? "lnp-text-win" : "lnp-text-loss";
+                    resText = myMatch.home === "La Tua Squadra" ? `${userScore} - ${oppScore}` : `${oppScore} - ${userScore}`;
+                }
+
+                html += `<div style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+                    <div><strong>Gara ${giornata.round}:</strong> ${myMatch.home === "La Tua Squadra" ? "VS" : "@"} ${vsTeam}</div>
+                    <div class="${cssClass}" style="font-family: monospace;">${resText}</div>
+                </div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
         }
-    }
-}
 
-function executePlayoffGameLive() {
-    const pBtn = document.getElementById('btn-play-game');
-    if (pBtn) pBtn.disabled = true;
+        function simulateCPUMatches(currentRound) {
+            const roundData = fullLeagueSchedule[currentRound - 1];
+            if (!roundData) return;
+            
+            roundData.matches.forEach(match => {
+                if (match.home === "La Tua Squadra" || match.away === "La Tua Squadra") return; 
 
-    let roundSeries = playoffBracket[currentPlayoffRound];
-    let userSerie = roundSeries.find(s => s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra");
-    let isUserTeamA = userSerie.teamA === "La Tua Squadra";
-    let opponentName = isUserTeamA ? userSerie.teamB : userSerie.teamA;
+                let homePlayers = allPlayers.filter(p => p.club === match.home);
+                let homeOvr = homePlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (homePlayers.length || 1);
+                let awayPlayers = allPlayers.filter(p => p.club === match.away);
+                let awayOvr = awayPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (awayPlayers.length || 1);
 
-    // Logica di simulazione interna identica al motore principale
-    const oppPlayers = allPlayers.filter(p => p.club === opponentName).slice(0, 5);
-    const playersArray = Object.values(userTeam);
-    
-    let userShootingLuck = (Math.random() * 16) - 8;
-    let oppShootingLuck = (Math.random() * 16) - 8;
-    let matchPace = Math.round(74 + Math.random() * 10); // Ritmo leggermente più alto da playoff
+                let homeEff = 0.70 + ((homeOvr + 3) * 0.0035) + ((Math.random() * 14 - 7) / 100);
+                let awayEff = 0.70 + (awayOvr * 0.0035) + ((Math.random() * 14 - 7) / 100);
 
-    const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
-    const userEfficiency = 0.72 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
-    let finalUserScore = Math.round(matchPace * userEfficiency);
+                let pace = Math.round(72 + Math.random() * 12);
+                let scoreHome = Math.round(pace * homeEff);
+                let scoreAway = Math.round(pace * awayEff);
 
-    const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / oppPlayers.length : 74;
-    const oppEfficiency = 0.72 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
-    let finalOppScore = Math.round(matchPace * oppEfficiency);
+                if (scoreHome === scoreAway) scoreHome += Math.random() > 0.5 ? 2 : -2;
 
-    if (finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
+                match.score = `${scoreHome} - ${scoreAway}`;
+                match.simulated = true;
 
-    let isUserWin = finalUserScore > finalOppScore;
-    
-    // Assegnazione della vittoria nella serie
-    if (isUserWin) {
-        if (isUserTeamA) userSerie.winsA++; else userSerie.winsB++;
-        userWins++;
-    } else {
-        if (isUserTeamA) userSerie.winsB++; else userSerie.winsA++;
-        userLosses++;
-    }
+                if (scoreHome > scoreAway) {
+                    standings[match.home].wins++; standings[match.home].points += 2;
+                    standings[match.away].losses++;
+                } else {
+                    standings[match.away].wins++; standings[match.away].points += 2;
+                    standings[match.home].losses++;
+                }
+            });
+        }
 
-    // Calcolo dell'MVP reale della partita
-    let realMvpName = playersArray[0].cognome;
-    let maxPts = -1;
-    let mockScout = {};
-    playersArray.forEach(p => {
-        let pPts = Math.round((p.ppg || 12) * (0.7 + Math.random() * 0.6) + (finalUserScore * 0.02));
-        mockScout[p.cognome] = pPts;
-        if (pPts > maxPts) { maxPts = pPts; realMvpName = p.cognome; }
-    });
+        function buildPlayoffBrackets() {
+            if (!playoffBracket) {
+                let sortedTeams = Object.values(standings).sort((a, b) => b.points - a.points || b.wins - a.wins);
+                let qualified = sortedTeams.slice(0, 8);
+                
+                let userQualified = qualified.some(t => t.teamName === "La Tua Squadra");
+                if (!userQualified) {
+                    alert("Stagione Terminata! Fuori dai primi 8 posti.");
+                    return;
+                }
 
-    // Simula contemporaneamente le partite delle altre squadre della CPU
-    simulateCPUPlayoffGames();
-
-    // Stampa finale del risultato della gara sul banner
-    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
-    if (banner) {
-        let resultColor = isUserWin ? "#28a745" : "#dc3545";
-        let resultLabel = isUserWin ? "VITTORIA" : "SCONFITTA";
-        banner.innerHTML = `
-            <div style="font-size:1.4rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
-            <div style="font-size:0.9rem; color:#fff; margin:6px 0;">Gara ${currentPlayoffGameNumber} conclusa vs ${opponentName}</div>
-            <div style="font-size:0.8rem; color:#ff9800; font-weight:bold; margin-bottom:10px;">⭐ TOP SCORER: ${realMvpName} (${maxPts} Punti)</div>
-            <div style="background:rgba(255,255,255,0.06); padding:8px; border-radius:4px; font-size:0.85rem; margin-bottom:8px;">
-                Aggiornamento Serie: **${userSerie.teamA} ${userSerie.winsA} - ${userSerie.winsB} ${userSerie.teamB}**
-            </div>
-            <button onclick="closePlayoffBoxscore()" style="background:#1a365d; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">AVANZA NEL TABELLONE ➔</button>
-        `;
-    }
-
-    renderCalendarAndStandings();
-}
-window.executePlayoffGameLive = executePlayoffGameLive;
-
-function closePlayoffBoxscore() {
-    let roundSeries = playoffBracket[currentPlayoffRound];
-    let userSerie = roundSeries.find(s => s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra");
-    
-    if (userSerie.winsA === 3 || userSerie.winsB === 3) {
-        currentPlayoffGameNumber = 1;
-    } else {
-        currentPlayoffGameNumber++;
-    }
-    
-    buildPlayoffBrackets();
-}
-window.closePlayoffBoxscore = closePlayoffBoxscore;
-
-// ==========================================
-// 7. SIMULATORE MATCH UTENTE REGULAR SEASON (PRECEDENTE)
-// ==========================================
-function simMatch() {
-    if (currentMatchNumber > 38) {
-        buildPlayoffBrackets();
-        return;
-    }
-
-    const giornataData = fullLeagueSchedule[currentMatchNumber - 1];
-    const myMatch = giornataData.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
-    const opponentName = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
-
-    document.getElementById('main-game-viewport').classList.add('game-mode');
-    
-    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
-    if(pBtn) pBtn.disabled = true;
-
-    const oppPlayers = allPlayers.filter(p => p.club === opponentName).slice(0, 5);
-    let oppRosterNames = oppPlayers.map(p => p.cognome).join(", ");
-
-    const banner = document.getElementById('banner-main-text') || document.querySelector('.banner h1')?.parentNode;
-    if(banner) {
-        banner.innerHTML = `
-            <div style="color:#ff9800; font-weight:bold; font-size:0.9rem; margin-bottom:2px;">IN CORSO VS: ${opponentName.toUpperCase()}</div>
-            <div style="font-size:0.75rem; color:#ddd; margin-bottom:6px;">Lineup CPU: ${oppRosterNames || 'Generico'}</div>
-            <div id="match-status-text">Simulazione quarti...</div>
-        `;
-    }
-
-    const playersArray = Object.values(userTeam); 
-    let userShootingLuck = (Math.random() * 16) - 8;  
-    let oppShootingLuck = (Math.random() * 16) - 8;   
-
-    const selectElem = document.getElementById('tactic-select') || document.querySelector('select');
-    const selectedTactic = selectElem ? selectElem.value : '3-2';
-    let matchPace = Math.round(72 + Math.random() * 12);
-
-    if (selectedTactic === '4-1') { userShootingLuck += 8; oppShootingLuck += 10; } 
-    else if (selectedTactic === 'run-gun') { matchPace += 10; userShootingLuck = (Math.random() * 24) - 12; } 
-    else if (selectedTactic === 'defense') { matchPace -= 6; oppShootingLuck -= 8; userShootingLuck -= 8; }
-
-    const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
-    const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
-    let finalUserScore = Math.round(matchPace * userEfficiency);
-
-    const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / oppPlayers.length : 74;
-    const oppEfficiency = 0.70 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
-    let finalOppScore = Math.round(matchPace * oppEfficiency);
-
-    if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
-
-    let topScorer = playersArray[Math.floor(Math.random() * playersArray.length)];
-    let mvpPts = Math.round((topScorer.ppg || 12) * (0.8 + Math.random() * 0.6) + (finalUserScore * 0.03));
-    let mvpAst = Math.round((topScorer.apg || 3) * (0.6 + Math.random() * 0.8));
-    let mvpReb = Math.round((topScorer.rpg || 4) * (0.5 + Math.random() * 1.0));
-    let mvpStl = Math.round((topScorer.spg || 1) * (0.5 + Math.random() * 1.2));
-    let mvpFullStats = `${mvpPts} PTS | ${mvpReb} REB | ${mvpAst} AST | ${mvpStl} STL`;
-
-    let cpuTopScorerIndex = Math.floor(Math.random() * (oppPlayers.length || 5));
-
-    function generateTeamStats(score) {
-        let t3 = Math.floor(Math.random() * 5) + 5; 
-        let tl = Math.floor(Math.random() * 8) + 6; 
-        let rest = score - (t3 * 3) - tl;
-        let t2 = Math.max(0, Math.round(rest / 2));
-        
-        let scarto = score - ((t3 * 3) + (t2 * 2) + tl);
-        tl += scarto; 
-
-        let t2_att = t2 + Math.floor(Math.random() * 10) + 8;
-        let t3_att = t3 + Math.floor(Math.random() * 12) + 10;
-        
-        return {
-            t2: `${t2}/${t2_att} (${Math.round((t2/t2_att)*100)}%)`,
-            t3: `${t3}/${t3_att} (${Math.round((t3/t3_att)*100)}%)`,
-            tl: `${tl}/${Math.max(tl, tl + Math.floor(Math.random()*5))}`,
-            reb: Math.floor(Math.random() * 12) + 26,
-            ast: Math.min(t2 + t3 - 1, Math.floor(Math.random() * 8) + 12),
-            palle_perse: Math.floor(Math.random() * 5) + 8
-        };
-    }
-
-    function generateFullPlayerStats(totalScore, teamReb, teamAst, topScorerIndex, roster) {
-        let statsMap = {};
-        if (!roster || roster.length === 0) return statsMap;
-
-        let starPoints = Math.round(totalScore * (0.25 + Math.random() * 0.1));
-        let remainingPoints = totalScore - starPoints;
-        
-        let starReb = Math.floor(teamReb * 0.25) + Math.floor(Math.random() * 3);
-        let starAst = Math.floor(teamAst * 0.30) + Math.floor(Math.random() * 2);
-
-        let remReb = teamReb - starReb;
-        let remAst = teamAst - starAst;
-
-        let starPlayer = roster[topScorerIndex];
-        let starName = starPlayer.cognome || starPlayer.name || "Stella";
-        statsMap[starName] = { pts: starPoints, reb: starReb, ast: starAst };
-
-        let altriGiocatori = roster.filter((_, idx) => idx !== topScorerIndex);
-
-        altriGiocatori.forEach((p, index) => {
-            let nameKey = p.cognome || p.name || `Player-${index}`;
-            if (index === altriGiocatori.length - 1) {
-                statsMap[nameKey] = {
-                    pts: Math.max(0, remainingPoints),
-                    reb: Math.max(0, remReb),
-                    ast: Math.max(0, remAst)
+                playoffBracket = {
+                    "Quarti": [
+                        { teamA: qualified[0].teamName, seedA: 1, winsA: 0, teamB: qualified[7].teamName, seedB: 8, winsB: 0 },
+                        { teamA: qualified[3].teamName, seedA: 4, winsA: 0, teamB: qualified[4].teamName, seedB: 5, winsB: 0 },
+                        { teamA: qualified[1].teamName, seedA: 2, winsA: 0, teamB: qualified[6].teamName, seedB: 7, winsB: 0 },
+                        { teamA: qualified[2].teamName, seedA: 3, winsA: 0, teamB: qualified[5].teamName, seedB: 6, winsB: 0 }
+                    ],
+                    "Semifinali": [],
+                    "Finale": []
                 };
-            } else {
-                let pShare = Math.round(remainingPoints * (0.18 + (Math.random() * 0.15)));
-                let rShare = Math.floor(remReb * (0.15 + (Math.random() * 0.15)));
-                let aShare = Math.floor(remAst * (0.15 + (Math.random() * 0.15)));
-
-                statsMap[nameKey] = { pts: pShare, reb: rShare, ast: aShare };
-                remainingPoints -= pShare;
-                remReb -= rShare;
-                remAst -= aShare;
+                currentPlayoffRound = "Quarti";
+                currentPlayoffGameNumber = 1;
             }
-        });
-        return statsMap;
-    }
-
-    let currentStep = 0;
-    const totalSteps = 10;
-    const interval = setInterval(() => {
-        currentStep++;
-        let currentLiveUser = Math.round((finalUserScore / totalSteps) * currentStep);
-        let currentLiveOpp = Math.round((finalOppScore / totalSteps) * currentStep);
-        
-        const ticker = document.getElementById('live-simulation-ticker');
-        if(ticker) ticker.innerText = `LIVE GARA ${currentMatchNumber}: La Tua Squadra ${currentLiveUser} - ${currentLiveOpp} ${opponentName}`;
-
-        if (currentStep >= totalSteps) {
-            clearInterval(interval); 
             
+            renderCalendarAndStandings();
+            triggerPlayoffSimulationLoop();
+        }
+        window.buildPlayoffBrackets = buildPlayoffBrackets;
+
+        function triggerPlayoffSimulationLoop() {
+            let roundSeries = playoffBracket[currentPlayoffRound];
+            let allFinished = roundSeries.every(s => s.winsA === 3 || s.winsB === 3);
+            if (allFinished) {
+                advancePlayoffRound();
+                return;
+            }
+
+            let userSerie = roundSeries.find(s => s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra");
+            if (!userSerie) {
+                alert("Sei stato eliminato dai Playoff! Game Over.");
+                return;
+            }
+
+            if (userSerie.winsA === 3 || userSerie.winsB === 3) {
+                simulateCPUPlayoffGames();
+                renderCalendarAndStandings();
+                setTimeout(triggerPlayoffSimulationLoop, 200);
+                return;
+            }
+
+            let isUserTeamA = userSerie.teamA === "La Tua Squadra";
+            let opponentName = isUserTeamA ? userSerie.teamB : userSerie.teamA;
+            let betterSeed = isUserTeamA ? (userSerie.seedA < userSerie.seedB) : (userSerie.seedB < userSerie.seedA);
+            
+            let isUserHome = [1, 2, 5].includes(currentPlayoffGameNumber) ? betterSeed : !betterSeed;
+
+            const banner = document.getElementById('banner-main-text');
+            if (banner) {
+                banner.innerHTML = `
+                    <div style="color:#ff9800; font-weight:bold; font-size:1.1rem; margin-bottom:2px;">🔥 PLAYOFF - ${currentPlayoffRound.toUpperCase()} (GARA ${currentPlayoffGameNumber})</div>
+                    <div style="font-size:0.85rem; color:#fff; margin-bottom:6px;">SERIE: ${userSerie.teamA} [${userSerie.winsA}] - [${userSerie.winsB}] ${userSerie.teamB}</div>
+                    <button onclick="executePlayoffGameLive()" style="background:#10b981; color:white; padding:10px; border-radius:6px; font-weight:bold; width:100%;">GIOCA GARA ${currentPlayoffGameNumber} 🏀</button>
+                `;
+            }
+        }
+
+        function simulateCPUPlayoffGames() {
+            let roundSeries = playoffBracket[currentPlayoffRound];
+            roundSeries.forEach(s => {
+                if (s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra") return;
+                if (s.winsA === 3 || s.winsB === 3) return;
+
+                let homePlayers = allPlayers.filter(p => p.club === s.teamA);
+                let awayPlayers = allPlayers.filter(p => p.club === s.teamB);
+                let ovrA = homePlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (homePlayers.length || 1);
+                let ovrB = awayPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / (awayPlayers.length || 1);
+
+                if (ovrA + 2 + Math.random() * 10 > ovrB + Math.random() * 10) { s.winsA++; } else { s.winsB++; }
+            });
+        }
+
+        function advancePlayoffRound() {
+            let roundSeries = playoffBracket[currentPlayoffRound];
+            let winners = roundSeries.map(s => s.winsA === 3 ? { name: s.teamA, seed: s.seedA } : { name: s.teamB, seed: s.seedB });
+
+            if (currentPlayoffRound === "Quarti") {
+                playoffBracket["Semifinali"] = [
+                    { teamA: winners[0].name, seedA: winners[0].seed, winsA: 0, teamB: winners[1].name, seedB: winners[1].seed, winsB: 0 },
+                    { teamA: winners[2].name, seedA: winners[2].seed, winsA: 0, teamB: winners[3].name, seedB: winners[3].seed, winsB: 0 }
+                ];
+                currentPlayoffRound = "Semifinali";
+                currentPlayoffGameNumber = 1;
+                alert("🏆 Accedi alle SEMIFINALI Playoff!");
+                buildPlayoffBrackets();
+            } else if (currentPlayoffRound === "Semifinali") {
+                playoffBracket["Finale"] = [
+                    { teamA: winners[0].name, seedA: winners[0].seed, winsA: 0, teamB: winners[1].name, seedB: winners[1].seed, winsB: 0 }
+                ];
+                currentPlayoffRound = "Finale";
+                currentPlayoffGameNumber = 1;
+                alert("🔥 SEI IN FINALE PLAYOFF LNP!");
+                buildPlayoffBrackets();
+            } else if (currentPlayoffRound === "Finale") {
+                let finalSerie = playoffBracket["Finale"][0];
+                let champion = finalSerie.winsA === 3 ? finalSerie.teamA : finalSerie.teamB;
+                if (champion === "La Tua Squadra") {
+                    alert("👑 CAMPIONI! Hai completato la scalata LNP! 🏆");
+                } else {
+                    alert(`Campione LNP: ${champion}. Ritenta!`);
+                }
+            }
+        }
+
+        function executePlayoffGameLive() {
+            let roundSeries = playoffBracket[currentPlayoffRound];
+            let userSerie = roundSeries.find(s => s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra");
+            let isUserTeamA = userSerie.teamA === "La Tua Squadra";
+            let opponentName = isUserTeamA ? userSerie.teamB : userSerie.teamA;
+
+            const oppPlayers = allPlayers.filter(p => p.club === opponentName).slice(0, 5);
+            const playersArray = Object.values(userTeam);
+            
+            let matchPace = Math.round(74 + Math.random() * 10);
+            const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
+            let finalUserScore = Math.round(matchPace * (0.72 + (myTeamOvrSum * 0.0035) + (Math.random()*0.1 - 0.05)));
+            const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + (p.ovr || 75), 0) / oppPlayers.length : 74;
+            let finalOppScore = Math.round(matchPace * (0.72 + (oppAvgOvr * 0.0035) + (Math.random()*0.1 - 0.05)));
+
+            if (finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
+            let isUserWin = finalUserScore > finalOppScore;
+            
+            if (isUserWin) {
+                if (isUserTeamA) userSerie.winsA++; else userSerie.winsB++;
+                userWins++;
+            } else {
+                if (isUserTeamA) userSerie.winsB++; else userSerie.winsA++;
+                userLosses++;
+            }
+
+            simulateCPUPlayoffGames();
+
+            const banner = document.getElementById('banner-main-text');
+            if (banner) {
+                banner.innerHTML = `
+                    <div style="font-size:1.4rem; color:${isUserWin ? '#10b981':'#ef4444'} !important; font-weight:bold;">${isUserWin ? 'VITTORIA':'SCONFITTA'}: ${finalUserScore} - ${finalOppScore}</div>
+                    <div style="background:rgba(255,255,255,0.06); padding:8px; border-radius:4px; font-size:0.85rem; margin:8px 0;">
+                        Serie: ${userSerie.teamA} ${userSerie.winsA} - ${userSerie.winsB} ${userSerie.teamB}
+                    </div>
+                    <button onclick="closePlayoffBoxscore()" style="background:#004b93; color:white; padding:10px; border-radius:6px; font-weight:bold; width:100%;">AVANZA ➔</button>
+                `;
+            }
+            renderCalendarAndStandings();
+        }
+        window.executePlayoffGameLive = executePlayoffGameLive;
+
+        function closePlayoffBoxscore() {
+            let roundSeries = playoffBracket[currentPlayoffRound];
+            let userSerie = roundSeries.find(s => s.teamA === "La Tua Squadra" || s.teamB === "La Tua Squadra");
+            if (userSerie.winsA === 3 || userSerie.winsB === 3) { currentPlayoffGameNumber = 1; } else { currentPlayoffGameNumber++; }
+            buildPlayoffBrackets();
+        }
+        window.closePlayoffBoxscore = closePlayoffBoxscore;
+
+        // --- MOTORE DI SIMULAZIONE CORRETTO SENZA BLOCCHI ---
+        function simMatch() {
+            if (currentMatchNumber > 38) {
+                buildPlayoffBrackets();
+                return;
+            }
+
+            const giornataData = fullLeagueSchedule[currentMatchNumber - 1];
+            const myMatch = giornataData.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
+            const opponentName = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
+
+            document.getElementById('main-game-viewport').classList.add('game-mode');
+            
+            const pBtn = document.getElementById('btn-play-game');
+            if(pBtn) pBtn.disabled = true;
+
+            const oppPlayers = allPlayers.filter(p => p.club === opponentName).slice(0, 5);
+            let oppRosterNames = oppPlayers.map(p => p.cognome).join(", ");
+
+            const banner = document.getElementById('banner-main-text');
+            if(banner) {
+                banner.innerHTML = `
+                    <div style="color:#ff9800; font-weight:bold; font-size:0.9rem; margin-bottom:2px;">IN CORSO VS: ${opponentName.toUpperCase()}</div>
+                    <div style="font-size:0.75rem; color:#ddd; margin-bottom:6px;">Lineup CPU: ${oppRosterNames || 'Generico'}</div>
+                    <div id="match-status-text">Simulazione quarti...</div>
+                `;
+            }
+
+            const playersArray = Object.values(userTeam); 
+            let userShootingLuck = (Math.random() * 16) - 8;  
+            let oppShootingLuck = (Math.random() * 16) - 8;   
+
+            const selectElem = document.getElementById('tactic-select');
+            const selectedTactic = selectElem ? selectElem.value : '3-2';
+            let matchPace = Math.round(72 + Math.random() * 12);
+
+            if (selectedTactic === '4-1') { userShootingLuck += 8; oppShootingLuck += 10; } 
+            else if (selectedTactic === 'run-gun') { matchPace += 10; userShootingLuck = (Math.random() * 24) - 12; } 
+            else if (selectedTactic === 'defense') { matchPace -= 6; oppShootingLuck -= 8; userShootingLuck -= 8; }
+
+            const myTeamOvrSum = playersArray.reduce((acc, p) => acc + (p.ovr || 75), 0) / 5;
+            const userEfficiency = 0.70 + (myTeamOvrSum * 0.0035) + (userShootingLuck / 100);
+            let finalUserScore = Math.round(matchPace * userEfficiency);
+
+            const oppAvgOvr = oppPlayers.length > 0 ? oppPlayers.reduce((acc, p) => acc + (p.ovr || 74), 0) / oppPlayers.length : 74;
+            const oppEfficiency = 0.70 + (oppAvgOvr * 0.0035) + (oppShootingLuck / 100);
+            let finalOppScore = Math.round(matchPace * oppEfficiency);
+
+            if (finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 2 : -2;
+
+            let isWin = finalUserScore > finalOppScore;
             myMatch.score = `${finalUserScore} - ${finalOppScore}`;
             myMatch.simulated = true;
 
-            let isUserWin = finalUserScore > finalOppScore;
-            let resultColor = isUserWin ? "#28a745" : "#dc3545";
-            let resultLabel = isUserWin ? "VITTORIA" : "SCONFITTA";
-
-            if (isUserWin) {
+            if (isWin) {
                 userWins++;
                 standings["La Tua Squadra"].wins++; standings["La Tua Squadra"].points += 2;
-                standings[opponentName].losses++;
             } else {
                 userLosses++;
-                standings[opponentName].wins++; standings[opponentName].points += 2;
                 standings["La Tua Squadra"].losses++;
             }
 
             simulateCPUMatches(currentMatchNumber);
 
-            const userStats = generateTeamStats(finalUserScore);
-            const oppStats = generateTeamStats(finalOppScore);
+            // Calcolo Statistiche Boxscore fittizie (Richieste dallo screenshot strutturato)
+            let userT2Att = Math.round(35 + Math.random()*10); let userT2Made = Math.round(userT2Att * (0.45 + Math.random()*0.15));
+            let userT3Att = Math.round(18 + Math.random()*10); let userT3Made = Math.round(userT3Att * (0.30 + Math.random()*0.15));
+            let userFtAtt = Math.round(12 + Math.random()*8); let userFtMade = Math.round(userFtAtt * 0.70);
+            let userTotReb = Math.round(32 + Math.random()*12); let userTotAst = Math.round(14 + Math.random()*8); let userTotStl = Math.round(6 + Math.random()*5);
 
-            const userFullScout = generateFullPlayerStats(finalUserScore, userStats.reb, userStats.ast, playersArray.indexOf(topScorer), playersArray);
-            
-            let cpuRosterMock = oppPlayers.length > 0 ? oppPlayers : [{cognome:"Play"},{cognome:"Guardia"},{cognome:"Ala"},{cognome:"Pivot"},{cognome:"Sesto"}];
-            const cpuFullScout = generateFullPlayerStats(finalOppScore, oppStats.reb, oppStats.ast, cpuTopScorerIndex, cpuRosterMock);
+            let oppT2Att = Math.round(35 + Math.random()*10); let oppT2Made = Math.round(oppT2Att * (0.45 + Math.random()*0.15));
+            let oppT3Att = Math.round(18 + Math.random()*10); let oppT3Made = Math.round(oppT3Att * (0.30 + Math.random()*0.15));
+            let oppFtAtt = Math.round(12 + Math.random()*8); let oppFtMade = Math.round(oppFtAtt * 0.70);
+            let oppTotReb = Math.round(32 + Math.random()*12); let oppTotAst = Math.round(14 + Math.random()*8); let oppTotStl = Math.round(6 + Math.random()*5);
 
-            let realMvpName = playersArray[0].cognome;
-            let maxPts = -1;
+            let maxPts = -1; let realMvpName = playersArray[0].cognome;
+            let userPlayersHtml = "";
             playersArray.forEach(p => {
-                let scout = userFullScout[p.cognome] || { pts: 0 };
-                if (scout.pts > maxPts) { maxPts = scout.pts; realMvpName = p.cognome; }
+                let pPts = Math.round((p.ppg || 12) * (0.6 + Math.random()*0.8) + (finalUserScore * 0.02));
+                let pReb = Math.round((p.rpg || 4) * (0.6 + Math.random()*0.8));
+                let pAst = Math.round((p.apg || 3) * (0.6 + Math.random()*0.8));
+                if(pPts > maxPts) { maxPts = pPts; realMvpName = p.cognome; }
+                userPlayersHtml += `<div style="font-size:0.7rem; color:#fff; display:flex; justify-content:space-between; padding:1px 0;"><span>🏀 ${p.cognome}</span><strong>${pPts} PT | ${pReb} RB | ${pAst} AS</strong></div>`;
             });
 
-            let realMvpStats = userFullScout[realMvpName] || { pts: 0, reb: 0, ast: 0 };
-            mvpFullStats = `${realMvpStats.pts} PTS | ${realMvpStats.reb} REB | ${realMvpStats.ast} AST`;
-
-            let userPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
-            playersArray.forEach(p => {
-                let scout = userFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
-                let isMvp = p.cognome === realMvpName;
-                let icon = isMvp ? " 👑" : "";
-                userPlayersHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:1px; color:${isMvp ? '#ff9800':'#ccc'}; font-weight:${isMvp ? 'bold':'normal'}">
-                    <span>${p.cognome}${icon}:</span>
-                    <span><strong>${scout.pts}</strong>P | <strong>${scout.reb}</strong>R | <strong>${scout.ast}</strong>A</span>
-                </div>`;
+            let oppPlayersHtml = "";
+            oppPlayers.forEach(p => {
+                let oPts = Math.round((p.ppg || 11) * (0.6 + Math.random()*0.8));
+                oppPlayersHtml += `<div style="font-size:0.7rem; color:#eee; display:flex; justify-content:space-between; padding:1px 0;"><span>👤 ${p.cognome}</span><strong>${oPts} PT</strong></div>`;
             });
-            userPlayersHtml += `</div>`;
 
-            let cpuPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
-            cpuRosterMock.forEach((p, idx) => {
-                let scout = cpuFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
-                let isTop = idx === cpuTopScorerIndex ? " ⭐" : "";
-                cpuPlayersHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:1px; color:${isTop ? '#f43f5e':'#ccc'}; font-weight:${isTop ? 'bold':'normal'}">
-                    <span>${p.cognome}${isTop}:</span>
-                    <span><strong>${scout.pts}</strong>P | <strong>${scout.reb}</strong>R | <strong>${scout.ast}</strong>A</span>
-                </div>`;
-            });
-            cpuPlayersHtml += `</div>`;
+            let currentTick = 1;
+            const ticker = document.getElementById('live-simulation-ticker');
+            let liveTimer = setInterval(() => {
+                if(currentTick <= 4) {
+                    if(ticker) ticker.innerText = `Q${currentTick}...`;
+                    currentTick++;
+                } else {
+                    clearInterval(liveTimer);
+                    if(ticker) ticker.innerText = "";
+                    renderCalendarAndStandings();
 
-            let statsBlockHtml = `
-                <div class="boxscore-wrapper" style="display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; text-align: left; font-size: 0.72rem; font-family: monospace;">
-                    <div class="boxscore-card" style="flex: 1; min-width: 240px; background: rgba(40, 167, 69, 0.12); border: 1px solid rgba(40, 167, 69, 0.25); padding: 8px; border-radius: 6px;">
-                        <div style="color: #28a745; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🏀 LA TUA SQUADRA</div>
-                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${userStats.t2}</strong></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${userStats.t3}</strong></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${userStats.tl}</strong></div>
-                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${userStats.reb}</strong></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${userStats.ast}</strong></div>
-                        <div style="display:flex; justify-content:space-between; color:#dc3545;"><span>Palle Perse:</span><strong>${userStats.palle_perse}</strong></div>
-                        ${userPlayersHtml}
-                    </div>
-                    <div class="boxscore-card" style="flex: 1; min-width: 240px; background: rgba(220, 53, 69, 0.12); border: 1px solid rgba(220, 53, 69, 0.25); padding: 8px; border-radius: 6px;">
-                        <div style="color: #dc3545; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px; margin-bottom: 4px;">🤖 ${opponentName.substring(0,14).toUpperCase()}</div>
-                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 2:</span><strong style="color:#fff;">${oppStats.t2}</strong></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Tiri da 3:</span><strong style="color:#fff;">${oppStats.t3}</strong></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Liberi:</span><strong style="color:#fff;">${oppStats.tl}</strong></div>
-                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Rimbalzi:</span><strong style="color:#ff9800;">${oppStats.reb}</strong></div>
-                        <div style="display:flex; justify-content:space-between;"><span>Assist:</span><strong style="color:#ff9800;">${oppStats.ast}</strong></div>
-                        <div style="display:flex; justify-content:space-between; color:#dc3545;"><span>Palle Perse:</span><strong>${oppStats.palle_perse}</strong></div>
-                        ${cpuPlayersHtml}
-                    </div>
-                </div>
-            `;
+                    if(banner) {
+                        let resultColor = isWin ? "#10b981" : "#ef4444";
+                        let resultLabel = isWin ? "VITTORIA" : "SCONFITTA";
 
-            renderCalendarAndStandings();
+                        let boxscoreHtml = `
+                            <div style="font-size:1.4rem; color:${resultColor} !important; font-weight:bold; text-align:center; margin-bottom:10px;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
+                            <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); padding:8px; border-radius:6px; margin-bottom:8px; text-align:left;">
+                                <div style="color:#10b981; font-weight:bold; font-size:0.85rem; margin-bottom:4px;">🏀 LA TUA SQUADRA</div>
+                                <div style="font-size:0.7rem; color:#aaa; display:grid; grid-template-columns: 1fr 1fr; gap:2px; margin-bottom:6px;">
+                                    <span>Tiri da 2: <strong>${userT2Made}/${userT2Att} (${Math.round((userT2Made/userT2Att)*100)}%)</strong></span>
+                                    <span>Rimbalzi: <strong>${userTotReb}</strong></span>
+                                    <span>Tiri da 3: <strong>${userT3Made}/${userT3Att} (${Math.round((userT3Made/userT3Att)*100)}%)</strong></span>
+                                    <span>Assist: <strong>${userTotAst}</strong></span>
+                                    <span>Liberi: <strong>${userFtMade}/${userFtAtt}</strong></span>
+                                    <span>Palle Perse: <span style="color:#ef4444;">${userTotStl}</span></span>
+                                </div>
+                                <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">${userPlayersHtml}</div>
+                            </div>
+                            <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); padding:8px; border-radius:6px; margin-bottom:10px; text-align:left;">
+                                <div style="color:#ef4444; font-weight:bold; font-size:0.85rem; margin-bottom:4px;">🤖 ${opponentName.toUpperCase()}</div>
+                                <div style="font-size:0.7rem; color:#aaa; display:grid; grid-template-columns: 1fr 1fr; gap:2px; margin-bottom:6px;">
+                                    <span>Tiri da 2: <strong>${oppT2Made}/${oppT2Att} (${Math.round((oppT2Made/oppT2Att)*100)}%)</strong></span>
+                                    <span>Rimbalzi: <strong>${oppTotReb}</strong></span>
+                                    <span>Tiri da 3: <strong>${oppT3Made}/${oppT3Att} (${Math.round((oppT3Made/oppT3Att)*100)}%)</strong></span>
+                                    <span>Assist: <strong>${oppTotAst}</strong></span>
+                                    <span>Liberi: <strong>${oppFtMade}/${oppFtAtt}</strong></span>
+                                    <span>Palle Perse: <span style="color:#ef4444;">${oppTotStl}</span></span>
+                                </div>
+                                <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">${oppPlayersHtml}</div>
+                            </div>
+                            <div style="font-size:0.75rem; color:#ff9800; text-align:center; margin:6px 0; font-weight:bold;">⭐ MVP: ${realMvpName} (${maxPts} PTS)</div>
+                        `;
 
-            if (currentMatchNumber === 19) {
-                if(banner) {
-                    banner.innerHTML = `
-                        <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
-                        ${statsBlockHtml}
-                        <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
-                        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:6px 0;">
-                        <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px; font-size:0.9rem;">APRI MERCATO DI REPARAZIONE 🔄</button>
-                    `;
+                        if (currentMatchNumber === 19) {
+                            banner.innerHTML = boxscoreHtml + `
+                                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.15); margin:6px 0;">
+                                <button onclick="startMidSeasonMarket()" style="background:#ff9800; color:#fff; padding:10px; border-radius:6px; font-weight:bold; width:100%;">Apri Mercato Di Riparazione 🔄</button>
+                            `;
+                        } else if (currentMatchNumber === 38) {
+                            banner.innerHTML = boxscoreHtml + `
+                                <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; padding:10px; border-radius:6px; font-weight:bold; width:100%;">Accedi Ai Playoff LNP ➔</button>
+                            `;
+                            currentMatchNumber++;
+                        } else {
+                            banner.innerHTML = boxscoreHtml + `
+                                <button onclick="closeBoxscore()" style="background:#004b93; color:#fff; padding:10px; border-radius:6px; font-weight:bold; width:100%;">Avanza al prossimo turno ➔</button>
+                            `;
+                            currentMatchNumber++;
+                        }
+                    }
                 }
-                currentMatchNumber++;
-                return;
-            }
-
-            if (currentMatchNumber === 38) {
-                if(banner) {
-                    banner.innerHTML = `
-                        <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
-                        ${statsBlockHtml}
-                        <div style="font-size:1.15rem; color:#ff9800; font-weight:bold; margin-top:5px;">REGULAR SEASON TERMINATA!</div>
-                        <button onclick="buildPlayoffBrackets()" style="background:#38a169; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">ACCEDI AI PLAYOFF LNP ➔</button>
-                    `;
-                }
-                currentMatchNumber++;
-                return;
-            }
-
-            if(banner) {
-                banner.innerHTML = `
-                    <div style="font-size:1.3rem; color:${resultColor} !important; font-weight:bold;">${resultLabel}: ${finalUserScore} - ${finalOppScore}</div>
-                    ${statsBlockHtml}
-                    <div style="font-size:0.75rem; color:#ff9800; margin:4px 0;">⭐ PERCORSO MVP: ${realMvpName} (${mvpFullStats})</div>
-                    <button onclick="closeBoxscore()" style="background: #1a365d; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:6px;">AVANZA AL PROSSIMO TURNO ➔</button>
-                `;
-            }
-            currentMatchNumber++;
+            }, 120);
         }
-    }, 120);
-}
+        window.simMatch = simMatch;
 
+        function closeBoxscore() {
+            document.getElementById('main-game-viewport').classList.remove('game-mode');
+            const pBtn = document.getElementById('btn-play-game');
+            if(pBtn) pBtn.disabled = false;
 
-function closeBoxscore() {
-    document.getElementById('main-game-viewport').classList.remove('game-mode');
-    const pBtn = document.getElementById('btn-play-game') || document.querySelector('button[onclick*="simMatch"]');
-    if(pBtn) pBtn.disabled = false;
-    updateMatchBanner();
-}
+            const banner = document.getElementById('banner-main-text');
+            if(banner) {
+                const giornataData = fullLeagueSchedule[currentMatchNumber - 1];
+                if(giornataData) {
+                    const myMatch = giornataData.matches.find(m => m.home === "La Tua Squadra" || m.away === "La Tua Squadra");
+                    const opponentName = myMatch.home === "La Tua Squadra" ? myMatch.away : myMatch.home;
+                    banner.innerHTML = `Gara ${currentMatchNumber}: Prossimo turno contro <strong>${opponentName}</strong>.`;
+                }
+            }
+        }
+        window.closeBoxscore = closeBoxscore;
 
-</script>
-</body>
+        function startMidSeasonMarket() {
+            alert("Mercato Aperto! Scegli i tuoi cambi.");
+            currentMatchNumber++;
+            closeBoxscore();
+        }
+        window.startMidSeasonMarket = startMidSeasonMarket;
+    </script>
+            </body>
 </html>
