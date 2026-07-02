@@ -3687,7 +3687,6 @@ function simMatch() {
 
     if(finalUserScore === finalOppScore) finalUserScore += Math.random() > 0.5 ? 3 : -3;
 
-    // MVP Utente e dati di picco
     let topScorer = playersArray[Math.floor(Math.random() * playersArray.length)];
     let mvpPts = Math.round((topScorer.ppg || 12) * (0.8 + Math.random() * 0.6) + (finalUserScore * 0.03));
     let mvpAst = Math.round((topScorer.apg || 3) * (0.6 + Math.random() * 0.8));
@@ -3697,21 +3696,12 @@ function simMatch() {
 
     let cpuTopScorerIndex = Math.floor(Math.random() * (oppPlayers.length || 5));
 
-    // ==========================================
-    // ENGINE STATISTICHE SQUADRA (CON PALLE PERSE UTENTE)
-    // ==========================================
-    // ==========================================
-    // ENGINE STATISTICHE SQUADRA (BLINDATO ANTI-LOOP)
-    // ==========================================
     function generateTeamStats(score) {
         let t3 = Math.floor(Math.random() * 5) + 5; 
         let tl = Math.floor(Math.random() * 8) + 6; 
+        let rest = score - (t3 * 3) - tl;
+        let t2 = Math.max(0, Math.round(rest / 2));
         
-        // Calcolo lineare senza cicli WHILE infiniti
-        let puntiRimasti = score - (t3 * 3) - tl;
-        let t2 = Math.max(0, Math.round(puntiRimasti / 2));
-        
-        // Se c'è uno scarto di 1 o 2 punti, lo sistemiamo sui tiri liberi per far quadrare il totale
         let scarto = score - ((t3 * 3) + (t2 * 2) + tl);
         tl += scarto; 
 
@@ -3728,25 +3718,19 @@ function simMatch() {
         };
     }
 
-    // ==========================================
-    // GENERATORE COMPLETO STATS COMPAGNE (PTS - REB - AST)
-    // ==========================================
     function generateFullPlayerStats(totalScore, teamReb, teamAst, topScorerIndex, roster) {
         let statsMap = {};
         if (!roster || roster.length === 0) return statsMap;
 
-        // 1. Assegnazione Punti con controllo matematico sul totale
         let starPoints = Math.round(totalScore * (0.25 + Math.random() * 0.1));
         let remainingPoints = totalScore - starPoints;
         
-        // Sganciamo anche i rimbalzi e assist per la stella
         let starReb = Math.floor(teamReb * 0.25) + Math.floor(Math.random() * 3);
         let starAst = Math.floor(teamAst * 0.30) + Math.floor(Math.random() * 2);
 
         let remReb = teamReb - starReb;
         let remAst = teamAst - starAst;
 
-        // Inizializza l'MVP / Top Scorer
         let starPlayer = roster[topScorerIndex];
         let starName = starPlayer.cognome || starPlayer.name || "Stella";
         statsMap[starName] = { pts: starPoints, reb: starReb, ast: starAst };
@@ -3807,22 +3791,18 @@ function simMatch() {
 
             simulateCPUMatches(currentMatchNumber);
 
-            // Generiamo i dati di squadra globali
             const userStats = generateTeamStats(finalUserScore);
             const oppStats = generateTeamStats(finalOppScore);
 
-            // Generiamo i tabellini completi (Punti, Rimbalzi, Assist) per ogni giocatore
             const userFullScout = generateFullPlayerStats(finalUserScore, userStats.reb, userStats.ast, playersArray.indexOf(topScorer), playersArray);
             
             let cpuRosterMock = oppPlayers.length > 0 ? oppPlayers : [{cognome:"Play"},{cognome:"Guardia"},{cognome:"Ala"},{cognome:"Pivot"},{cognome:"Sesto"}];
             const cpuFullScout = generateFullPlayerStats(finalOppScore, oppStats.reb, oppStats.ast, cpuTopScorerIndex, cpuRosterMock);
 
-            // Sovrascriviamo le prestazioni dell'MVP utente con quelle precise calcolate dal simulatore primario
             if(userFullScout[topScorer.cognome]) {
                 userFullScout[topScorer.cognome] = { pts: mvpPts, reb: mvpReb, ast: mvpAst };
             }
 
-            // COSTRUZIONE FILA GIOCATORI UTENTE (Formato compatto: PTS | REB | AST)
             let userPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
             playersArray.forEach(p => {
                 let scout = userFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
@@ -3834,7 +3814,6 @@ function simMatch() {
             });
             userPlayersHtml += `</div>`;
 
-            // COSTRUZIONE FILA GIOCATORI CPU
             let cpuPlayersHtml = `<div style="margin-top:6px; font-size:0.65rem; border-top:1px dashed rgba(255,255,255,0.15); padding-top:4px;">`;
             cpuRosterMock.forEach((p, idx) => {
                 let scout = cpuFullScout[p.cognome] || { pts: 0, reb: 0, ast: 0 };
@@ -3846,8 +3825,6 @@ function simMatch() {
             });
             cpuPlayersHtml += `</div>`;
 
-            // BLOCCO CSS + STRUTTURA RESPONSIVE (MEDIA QUERY AGGIUNTA)
-           // RENDER BOX COMPLETO AFFIANCATO (Struttura flessibile nativa)
             let statsBlockHtml = `
                 <div class="boxscore-wrapper" style="display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; text-align: left; font-size: 0.72rem; font-family: monospace;">
                     <div class="boxscore-card" style="flex: 1; min-width: 240px; background: rgba(40, 167, 69, 0.12); border: 1px solid rgba(40, 167, 69, 0.25); padding: 8px; border-radius: 6px;">
